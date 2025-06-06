@@ -1,0 +1,415 @@
+import React, { useState } from 'react';
+import { Sparkles, Clock, Calendar, Image, Share2, Target, Users, Building, MapPin, GraduationCap, Hash, Filter, X, Upload, Check } from 'lucide-react';
+import Card from '../common/Card';
+import Button from '../common/Button';
+import TextArea from '../common/TextArea';
+import Input from '../common/Input';
+
+interface TargetingOptions {
+  industry: string[];
+  jobTitles: string[];
+  companySize: string[];
+  experienceLevel: string[];
+  location: string;
+  educationLevel: string[];
+  keywords: string[];
+  excludeKeywords: string[];
+  linkedinGroups: string[];
+  connectionDegree: '1st' | '2nd' | '3rd' | 'all';
+  engagementLevel: 'low' | 'medium' | 'high' | 'all';
+}
+
+interface ImagePreview {
+  url: string;
+  file?: File;
+  type: 'upload' | 'url';
+  selected?: boolean;
+}
+
+const PostGenerator: React.FC = () => {
+  const [prompt, setPrompt] = useState('');
+  const [generatedContent, setGeneratedContent] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showScheduler, setShowScheduler] = useState(false);
+  const [showTargeting, setShowTargeting] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+  const [selectedImages, setSelectedImages] = useState<ImagePreview[]>([]);
+  const [dragActive, setDragActive] = useState(false);
+  
+  const [targeting, setTargeting] = useState<TargetingOptions>({
+    industry: [],
+    jobTitles: [],
+    companySize: [],
+    experienceLevel: [],
+    location: '',
+    educationLevel: [],
+    keywords: [],
+    excludeKeywords: [],
+    linkedinGroups: [],
+    connectionDegree: 'all',
+    engagementLevel: 'all'
+  });
+
+  const handleImageUpload = (files: FileList | null) => {
+    if (!files) return;
+
+    const newImages: ImagePreview[] = Array.from(files).map(file => ({
+      url: URL.createObjectURL(file),
+      file,
+      type: 'upload',
+      selected: false
+    }));
+
+    setSelectedImages(prev => [...prev, ...newImages]);
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleImageUpload(e.dataTransfer.files);
+    }
+  };
+
+  const handleUrlAdd = () => {
+    if (imageUrl.trim()) {
+      setSelectedImages(prev => [...prev, { url: imageUrl, type: 'url', selected: false }]);
+      setImageUrl('');
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages(prev => {
+      const newImages = [...prev];
+      if (newImages[index].type === 'upload' && newImages[index].url) {
+        URL.revokeObjectURL(newImages[index].url);
+      }
+      newImages.splice(index, 1);
+      return newImages;
+    });
+  };
+
+  const handleImageSelect = (index: number) => {
+    setSelectedImages(prev => {
+      const newImages = [...prev];
+      newImages[index].selected = !newImages[index].selected;
+      return [...newImages];
+    });
+  };
+
+  const handleGenerate = () => {
+    setIsGenerating(true);
+    
+    setTimeout(() => {
+      const targetingContext = targeting.industry.length > 0 ? 
+        `Targeting professionals in ${targeting.industry.join(', ')} industries` :
+        '';
+      
+      const sampleResponses = [
+        `🚀 [${targetingContext}]\n\nExciting news! Our team just launched a new AI-powered tool that's changing how marketers approach audience segmentation.\n\nThrough analyzing over 1 million customer interactions, we discovered:\n\n1️⃣ 78% of customers prefer personalized recommendations over generic content\n2️⃣ Interactive content generates 4x more engagement than static posts\n3️⃣ Cross-channel consistency increases conversion rates by 25%\n\nWe're just scratching the surface of what's possible with these insights.\n\nWhat's your most effective strategy for audience engagement? Share below! 👇 #MarketingInnovation #AITools #DataDriven`,
+        `📊 3 AI Trends Reshaping Marketing in 2025:\n\n1. Hyper-personalization is becoming the norm - we're seeing 40% higher engagement when content speaks directly to individual needs and behaviors\n\n2. Predictive analytics are now accessible to businesses of all sizes - democratizing what was once enterprise-only technology\n\n3. Voice and visual search optimization is no longer optional - 65% of Gen Z starts their buying journey with non-text searches\n\nThe companies adapting to these shifts are seeing remarkable results, while others risk falling behind.\n\nWhich of these trends has had the biggest impact on your marketing strategy? #AIMarketing #DigitalTransformation`,
+      ];
+      
+      const randomResponse = sampleResponses[Math.floor(Math.random() * sampleResponses.length)];
+      setGeneratedContent(randomResponse);
+      setIsGenerating(false);
+    }, 1500);
+  };
+
+  const handlePublish = () => {
+    const selectedMediaCount = selectedImages.filter(img => img.selected).length;
+    alert(
+      `${showScheduler ? 'Post scheduled' : 'Post published'} successfully!\n` +
+      `${selectedMediaCount} images will be included with the post.${
+        showScheduler ? `\nScheduled for ${scheduledDate} at ${scheduledTime}` : ''
+      }`
+    );
+  };
+
+  return (
+    <Card title="Create LinkedIn Post">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2">
+          <div className="mb-4">
+            <TextArea
+              label="What would you like to post about?"
+              placeholder="Enter a topic or detailed instructions for GPT..."
+              rows={4}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+            />
+          </div>
+          
+          <div className="mb-6 flex flex-wrap gap-4">
+            <Button
+              onClick={handleGenerate}
+              isLoading={isGenerating}
+              icon={<Sparkles className="h-4 w-4" />}
+              className="w-full sm:w-auto"
+            >
+              Generate Content
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowTargeting(!showTargeting)}
+              icon={<Target className="h-4 w-4" />}
+            >
+              {showTargeting ? 'Hide Targeting' : 'Show Targeting'}
+            </Button>
+          </div>
+
+          {generatedContent && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Generated Content
+              </label>
+              <div className="relative">
+                <TextArea
+                  rows={8}
+                  value={generatedContent}
+                  onChange={(e) => setGeneratedContent(e.target.value)}
+                  className="pr-12"
+                />
+                <div className="absolute right-3 top-3 space-y-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="p-1"
+                    title="Regenerate content"
+                    onClick={handleGenerate}
+                  >
+                    <Sparkles className="h-4 w-4 text-[#0A66C2]" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {selectedImages.length > 0 && (
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">
+                Selected Media ({selectedImages.filter(img => img.selected).length} selected)
+              </h4>
+              <div className="grid grid-cols-4 gap-4">
+                {selectedImages.map((image, index) => (
+                  <div
+                    key={index}
+                    className={`relative group cursor-pointer ${
+                      image.selected ? 'ring-2 ring-[#0A66C2] ring-offset-2' : ''
+                    }`}
+                    onClick={() => handleImageSelect(index)}
+                  >
+                    <img
+                      src={image.url}
+                      alt={`Upload ${index + 1}`}
+                      className="w-full h-24 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveImage(index);
+                      }}
+                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                    {image.selected && (
+                      <div className="absolute inset-0 bg-[#0A66C2] bg-opacity-10 rounded-lg flex items-center justify-center">
+                        <div className="bg-[#0A66C2] text-white rounded-full p-1">
+                          <Check className="h-4 w-4" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {generatedContent && (
+            <div className="flex flex-wrap gap-4">
+              <Button
+                variant="primary"
+                icon={<Share2 className="h-4 w-4" />}
+                onClick={handlePublish}
+              >
+                {showScheduler ? 'Schedule Post' : 'Publish Now'}
+              </Button>
+              <Button
+                variant="outline"
+                icon={<Clock className="h-4 w-4" />}
+                onClick={() => setShowScheduler(!showScheduler)}
+              >
+                {showScheduler ? 'Publish Immediately' : 'Schedule for Later'}
+              </Button>
+              <Button
+                variant="outline"
+                icon={<Image className="h-4 w-4" />}
+                onClick={() => setShowImageModal(true)}
+              >
+                Add Media
+              </Button>
+            </div>
+          )}
+
+          {showImageModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-lg max-w-lg w-full p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium">Add Images</h3>
+                  <button
+                    onClick={() => setShowImageModal(false)}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-6 text-center ${
+                      dragActive ? 'border-[#0A66C2] bg-blue-50' : 'border-gray-300'
+                    }`}
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                  >
+                    <div className="flex flex-col items-center">
+                      <Upload className="h-12 w-12 text-gray-400 mb-4" />
+                      <p className="text-sm text-gray-500">
+                        Drag and drop images here, or{' '}
+                        <label className="text-[#0A66C2] hover:text-[#004182] cursor-pointer">
+                          browse
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => handleImageUpload(e.target.files)}
+                          />
+                        </label>
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Supports: JPG, PNG, GIF (max 5MB)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      placeholder="Or paste image URL here..."
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      className="flex-1 rounded-md border border-gray-300 shadow-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A66C2] focus:border-[#0A66C2]"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleUrlAdd();
+                        }
+                      }}
+                    />
+                    <Button onClick={handleUrlAdd}>Add URL</Button>
+                  </div>
+
+                  {selectedImages.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">
+                        Selected Images ({selectedImages.length})
+                      </h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        {selectedImages.map((image, index) => (
+                          <div
+                            key={index}
+                            className={`relative group cursor-pointer ${
+                              image.selected ? 'ring-2 ring-[#0A66C2] ring-offset-2' : ''
+                            }`}
+                            onClick={() => handleImageSelect(index)}
+                          >
+                            <img
+                              src={image.url}
+                              alt={`Upload ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-lg"
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveImage(index);
+                              }}
+                              className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                            {image.selected && (
+                              <div className="absolute inset-0 bg-[#0A66C2] bg-opacity-10 rounded-lg flex items-center justify-center">
+                                <div className="bg-[#0A66C2] text-white rounded-full p-1">
+                                  <Check className="h-4 w-4" />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end space-x-3 pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowImageModal(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button onClick={() => setShowImageModal(false)}>
+                      Done
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showScheduler && generatedContent && (
+            <div className="mt-6 p-4 bg-gray-50 rounded-md border border-gray-200">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Schedule Publication</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  type="date"
+                  label="Date"
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                  icon={<Calendar className="h-4 w-4 text-gray-500" />}
+                />
+                <Input
+                  type="time"
+                  label="Time"
+                  value={scheduledTime}
+                  onChange={(e) => setScheduledTime(e.target.value)}
+                  icon={<Clock className="h-4 w-4 text-gray-500" />}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+export default PostGenerator;
