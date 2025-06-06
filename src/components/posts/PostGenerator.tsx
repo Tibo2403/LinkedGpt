@@ -1,23 +1,11 @@
 import React, { useState } from 'react';
-import { Sparkles, Clock, Calendar, Image, Share2, Target, Users, Building, MapPin, GraduationCap, Hash, Filter, X, Upload, Check } from 'lucide-react';
+import { Sparkles, Clock, Calendar, Image, Share2, Target, X, Upload, Check } from 'lucide-react';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
+import { generateContent, sendLinkedInPost } from '../../lib/api';
 
-interface TargetingOptions {
-  industry: string[];
-  jobTitles: string[];
-  companySize: string[];
-  experienceLevel: string[];
-  location: string;
-  educationLevel: string[];
-  keywords: string[];
-  excludeKeywords: string[];
-  linkedinGroups: string[];
-  connectionDegree: '1st' | '2nd' | '3rd' | 'all';
-  engagementLevel: 'low' | 'medium' | 'high' | 'all';
-}
 
 interface ImagePreview {
   url: string;
@@ -39,19 +27,6 @@ const PostGenerator: React.FC = () => {
   const [selectedImages, setSelectedImages] = useState<ImagePreview[]>([]);
   const [dragActive, setDragActive] = useState(false);
   
-  const [targeting, setTargeting] = useState<TargetingOptions>({
-    industry: [],
-    jobTitles: [],
-    companySize: [],
-    experienceLevel: [],
-    location: '',
-    educationLevel: [],
-    keywords: [],
-    excludeKeywords: [],
-    linkedinGroups: [],
-    connectionDegree: 'all',
-    engagementLevel: 'all'
-  });
 
   const handleImageUpload = (files: FileList | null) => {
     if (!files) return;
@@ -112,33 +87,32 @@ const PostGenerator: React.FC = () => {
     });
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true);
-    
-    setTimeout(() => {
-      const targetingContext = targeting.industry.length > 0 ? 
-        `Targeting professionals in ${targeting.industry.join(', ')} industries` :
-        '';
-      
-      const sampleResponses = [
-        `🚀 [${targetingContext}]\n\nExciting news! Our team just launched a new AI-powered tool that's changing how marketers approach audience segmentation.\n\nThrough analyzing over 1 million customer interactions, we discovered:\n\n1️⃣ 78% of customers prefer personalized recommendations over generic content\n2️⃣ Interactive content generates 4x more engagement than static posts\n3️⃣ Cross-channel consistency increases conversion rates by 25%\n\nWe're just scratching the surface of what's possible with these insights.\n\nWhat's your most effective strategy for audience engagement? Share below! 👇 #MarketingInnovation #AITools #DataDriven`,
-        `📊 3 AI Trends Reshaping Marketing in 2025:\n\n1. Hyper-personalization is becoming the norm - we're seeing 40% higher engagement when content speaks directly to individual needs and behaviors\n\n2. Predictive analytics are now accessible to businesses of all sizes - democratizing what was once enterprise-only technology\n\n3. Voice and visual search optimization is no longer optional - 65% of Gen Z starts their buying journey with non-text searches\n\nThe companies adapting to these shifts are seeing remarkable results, while others risk falling behind.\n\nWhich of these trends has had the biggest impact on your marketing strategy? #AIMarketing #DigitalTransformation`,
-      ];
-      
-      const randomResponse = sampleResponses[Math.floor(Math.random() * sampleResponses.length)];
-      setGeneratedContent(randomResponse);
+    try {
+      const text = await generateContent(prompt);
+      setGeneratedContent(text);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to generate content');
+    } finally {
       setIsGenerating(false);
-    }, 1500);
+    }
   };
 
-  const handlePublish = () => {
-    const selectedMediaCount = selectedImages.filter(img => img.selected).length;
-    alert(
-      `${showScheduler ? 'Post scheduled' : 'Post published'} successfully!\n` +
-      `${selectedMediaCount} images will be included with the post.${
-        showScheduler ? `\nScheduled for ${scheduledDate} at ${scheduledTime}` : ''
-      }`
-    );
+  const handlePublish = async () => {
+    const token = import.meta.env.VITE_LINKEDIN_API_KEY;
+    if (!token) {
+      alert('LinkedIn API key not configured');
+      return;
+    }
+    try {
+      await sendLinkedInPost(generatedContent, token);
+      alert('Post published successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to publish post');
+    }
   };
 
   return (
