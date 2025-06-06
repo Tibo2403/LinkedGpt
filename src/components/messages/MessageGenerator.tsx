@@ -17,6 +17,7 @@ interface RecipientTarget {
 
 const MessageGenerator: React.FC = () => {
   const [recipientName, setRecipientName] = useState('');
+  const [recipientUrn, setRecipientUrn] = useState('');
   const [prompt, setPrompt] = useState('');
   const [messageType, setMessageType] = useState('connection');
   const [generatedMessage, setGeneratedMessage] = useState('');
@@ -82,6 +83,12 @@ const MessageGenerator: React.FC = () => {
     ]
   };
 
+  // Example lookup table mapping recipient names to their LinkedIn URNs
+  const recipientUrnMap: Record<string, string> = {
+    'John Doe': 'urn:li:person:john123',
+    'Jane Smith': 'urn:li:person:jane456',
+  };
+
   const currentTemplates = templates[messageType as keyof typeof templates];
 
   const handleGenerate = async () => {
@@ -116,8 +123,13 @@ const MessageGenerator: React.FC = () => {
       alert('LinkedIn API key not configured');
       return;
     }
+    const urn = recipientUrn || recipientUrnMap[recipientName.trim()];
+    if (!urn) {
+      alert('Recipient URN not found. Please provide a valid URN.');
+      return;
+    }
     try {
-      await sendLinkedInMessage(generatedMessage, recipientName, token);
+      await sendLinkedInMessage(generatedMessage, urn, token);
       alert(`Message to ${recipientName} sent successfully!`);
     } catch (err) {
       console.error(err);
@@ -135,13 +147,21 @@ const MessageGenerator: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2">
           <div className="mb-4">
+          <Input
+            label="Recipient Name"
+            placeholder="Enter recipient's name"
+            value={recipientName}
+            onChange={(e) => setRecipientName(e.target.value)}
+          />
+          <div className="mt-2">
             <Input
-              label="Recipient Name"
-              placeholder="Enter recipient's name"
-              value={recipientName}
-              onChange={(e) => setRecipientName(e.target.value)}
+              label="Recipient URN"
+              placeholder="urn:li:person:123"
+              value={recipientUrn}
+              onChange={(e) => setRecipientUrn(e.target.value)}
             />
           </div>
+        </div>
           
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
