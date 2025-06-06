@@ -1,0 +1,15 @@
+{
+  "dashboard": { "title": "Tableau de bord" },
+  "posts": {
+    "title": "Générateur de posts",
+    "description": "Créez des publications LinkedIn avec l'IA."
+  },
+  "history": { "title": "Historique" },
+  "profile": { "title": "Profil" },
+  "settings": { "title": "Paramètres" },
+  "auth": {
+    "login": "Se connecter",
+    "signup": "S'inscrire",
+    "signOut": "Se déconnecter"
+  }
+}

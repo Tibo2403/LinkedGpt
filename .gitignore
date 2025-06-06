@@ -79,7 +79,9 @@ dist
 
 # Gatsby files
 .cache/
-public
+public/*
+!public/locales/
+!public/locales/**
 
 # Vite build output
 dist/
