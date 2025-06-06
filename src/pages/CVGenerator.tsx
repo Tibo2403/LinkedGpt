@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Download, Upload, Sparkles, FileDown, FileText as FileTextIcon, Settings, X } from 'lucide-react';
+import { FileText, Sparkles, FileDown, FileText as FileTextIcon, Settings, X } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import Card from '../components/common/Card';
