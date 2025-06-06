@@ -4,7 +4,7 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, sendLinkedInMessage } from '../../lib/api';
+import { generateContent, sendLinkedInMessage, ApiException } from '../../lib/api';
 
 interface RecipientTarget {
   industry?: string;
@@ -107,7 +107,11 @@ const MessageGenerator: React.FC = () => {
       setGeneratedMessage(text);
     } catch (err) {
       console.error(err);
-      alert('Failed to generate message');
+      if (err instanceof ApiException) {
+        alert(err.message);
+      } else {
+        alert('Failed to generate message');
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -133,7 +137,11 @@ const MessageGenerator: React.FC = () => {
       alert(`Message to ${recipientName} sent successfully!`);
     } catch (err) {
       console.error(err);
-      alert('Failed to send message');
+      if (err instanceof ApiException) {
+        alert(err.message);
+      } else {
+        alert('Failed to send message');
+      }
     }
   };
 

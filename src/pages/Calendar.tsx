@@ -5,7 +5,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
-import { fetchGoogleCalendarEvents, fetchOutlookEvents, fetchLinkedInEvents } from '../lib/api';
+import { fetchGoogleCalendarEvents, fetchOutlookEvents, fetchLinkedInEvents, ApiException } from '../lib/api';
 
 interface Meeting {
   id: string;
@@ -174,7 +174,11 @@ const Calendar: React.FC = () => {
       setMeetings(prev => [...prev, ...events]);
     } catch (err) {
       console.error(err);
-      alert('Failed to fetch Google Calendar events');
+      if (err instanceof ApiException) {
+        alert(err.message);
+      } else {
+        alert('Failed to fetch Google Calendar events');
+      }
     }
   };
 
@@ -191,7 +195,11 @@ const Calendar: React.FC = () => {
       setMeetings(prev => [...prev, ...events]);
     } catch (err) {
       console.error(err);
-      alert('Failed to fetch LinkedIn events');
+      if (err instanceof ApiException) {
+        alert(err.message);
+      } else {
+        alert('Failed to fetch LinkedIn events');
+      }
     }
   };
 
@@ -214,7 +222,11 @@ const Calendar: React.FC = () => {
       setMeetings(events);
     } catch (err) {
       console.error(err);
-      alert('Failed to sync calendars');
+      if (err instanceof ApiException) {
+        alert(err.message);
+      } else {
+        alert('Failed to sync calendars');
+      }
     } finally {
       setIsSyncing(false);
     }

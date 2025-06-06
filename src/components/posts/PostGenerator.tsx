@@ -4,7 +4,7 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, sendLinkedInPost } from '../../lib/api';
+import { generateContent, sendLinkedInPost, ApiException } from '../../lib/api';
 
 
 interface ImagePreview {
@@ -94,7 +94,11 @@ const PostGenerator: React.FC = () => {
       setGeneratedContent(text);
     } catch (err) {
       console.error(err);
-      alert('Failed to generate content');
+      if (err instanceof ApiException) {
+        alert(err.message);
+      } else {
+        alert('Failed to generate content');
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -111,7 +115,11 @@ const PostGenerator: React.FC = () => {
       alert('Post published successfully!');
     } catch (err) {
       console.error(err);
-      alert('Failed to publish post');
+      if (err instanceof ApiException) {
+        alert(err.message);
+      } else {
+        alert('Failed to publish post');
+      }
     }
   };
 
