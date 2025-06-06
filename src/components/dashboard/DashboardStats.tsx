@@ -1,7 +1,14 @@
 import React from 'react';
+
+/**
+ * Displays high level statistics on the dashboard.
+ */
 import { BarChart, PieChart, Users, MessageSquare } from 'lucide-react';
 import Card from '../common/Card';
 
+/**
+ * Render summary cards for posts, messages and engagement.
+ */
 const DashboardStats: React.FC = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

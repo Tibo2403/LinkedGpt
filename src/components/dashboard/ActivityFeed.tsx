@@ -1,7 +1,14 @@
 import React from 'react';
+
+/**
+ * Shows recent activity metrics such as posts or messages.
+ */
 import { MessageSquare, ThumbsUp, Share2, Send } from 'lucide-react';
 import Card from '../common/Card';
 
+/**
+ * Lists mock user activity within a card component.
+ */
 const ActivityFeed: React.FC = () => {
   const activities = [
     {

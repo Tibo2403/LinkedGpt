@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+
+/**
+ * Tool for generating and sending LinkedIn messages.
+ */
 import { Sparkles, Send, Save, Users, Target, Building, GraduationCap } from 'lucide-react';
 import Card from '../common/Card';
 import Button from '../common/Button';
@@ -15,6 +19,9 @@ interface RecipientTarget {
   location?: string;
 }
 
+/**
+ * Allows users to craft LinkedIn messages with GPT assistance.
+ */
 const MessageGenerator: React.FC = () => {
   const [recipientName, setRecipientName] = useState('');
   const [recipientUrn, setRecipientUrn] = useState('');

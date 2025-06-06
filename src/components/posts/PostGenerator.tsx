@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+
+/**
+ * Interface to generate LinkedIn posts with optional images.
+ */
 import { Sparkles, Clock, Calendar, Image, Share2, Target, X, Upload, Check } from 'lucide-react';
 import Card from '../common/Card';
 import Button from '../common/Button';
@@ -14,6 +18,9 @@ interface ImagePreview {
   selected?: boolean;
 }
 
+/**
+ * Allows users to craft and publish posts using GPT-generated text.
+ */
 const PostGenerator: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
