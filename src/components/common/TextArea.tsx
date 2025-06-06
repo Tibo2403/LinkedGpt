@@ -1,10 +1,22 @@
 import React from 'react';
 
+/**
+ * Multi-line text area with optional label.
+ */
+
 interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
   rows?: number;
 }
+
+/**
+ * Renders a styled textarea element.
+ *
+ * @param props.label - Optional field label.
+ * @param props.error - Validation message shown below the textarea.
+ * @param props.rows - Default height in rows.
+ */
 
 const TextArea: React.FC<TextAreaProps> = ({
   label,
