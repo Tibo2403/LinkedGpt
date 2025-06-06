@@ -192,6 +192,8 @@ Assurez-vous de configurer toutes les variables d'environnement nécessaires dan
 - Implémentez une limitation de taux pour les API
 - Surveillez l'utilisation des API
 - Rotez régulièrement les clés API
+- Activez Row Level Security (RLS) sur la base de données
+- Toutes les fonctionnalités nécessitent une authentification
 
 ## 📚 Utilisation
 
@@ -215,6 +217,26 @@ Assurez-vous de configurer toutes les variables d'environnement nécessaires dan
 - Analysez les performances de vos posts
 - Suivez la croissance de votre réseau
 
+## 📏 Bonnes pratiques
+
+### Création de contenu
+- Restez professionnel dans vos publications
+- Utilisez des hashtags pertinents
+- Incluez des appels à l'action
+- Maintenez une fréquence de publication régulière
+
+### Networking
+- Personnalisez vos demandes de connexion
+- Faites un suivi sous 48 h
+- Interagissez avec le contenu de vos contacts
+- Soyez concis dans vos messages
+
+### Gestion du calendrier
+- Planifiez les réunions pendant les heures de bureau
+- Incluez un ordre du jour clair
+- Envoyez des rappels aux participants
+- Faites un suivi après les réunions
+
 ## 🤝 Contribution
 
 1. Fork le projet
@@ -233,7 +255,7 @@ Pour obtenir de l'aide :
 
 1. Consultez la documentation
 2. Ouvrez une issue sur GitHub
-3. Contactez l'équipe de support
+3. Contactez l'équipe de support à [support@linkedgpt.com](mailto:support@linkedgpt.com)
 
 ## 🔄 Changelog
 
