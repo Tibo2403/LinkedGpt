@@ -1,0 +1,15 @@
+{
+  "dashboard": { "title": "Dashboard" },
+  "posts": {
+    "title": "Post Generator",
+    "description": "Create engaging LinkedIn posts with AI assistance."
+  },
+  "history": { "title": "History" },
+  "profile": { "title": "Profile" },
+  "settings": { "title": "Settings" },
+  "auth": {
+    "login": "Log In",
+    "signup": "Sign Up",
+    "signOut": "Sign Out"
+  }
+}

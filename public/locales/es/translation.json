@@ -1,0 +1,15 @@
+{
+  "dashboard": { "title": "Panel" },
+  "posts": {
+    "title": "Generador de publicaciones",
+    "description": "Crea publicaciones de LinkedIn con IA."
+  },
+  "history": { "title": "Historial" },
+  "profile": { "title": "Perfil" },
+  "settings": { "title": "Configuración" },
+  "auth": {
+    "login": "Iniciar sesión",
+    "signup": "Registrarse",
+    "signOut": "Cerrar sesión"
+  }
+}
