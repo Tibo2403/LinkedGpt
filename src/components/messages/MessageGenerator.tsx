@@ -4,6 +4,7 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
+import { generateContent, sendLinkedInMessage } from '../../lib/api';
 
 interface RecipientTarget {
   industry?: string;
@@ -83,41 +84,45 @@ const MessageGenerator: React.FC = () => {
 
   const currentTemplates = templates[messageType as keyof typeof templates];
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!recipientName) {
       alert('Please enter a recipient name');
       return;
     }
-    
+
     setIsGenerating(true);
-    
-    // Mock API call to ChatGPT with targeting parameters
-    setTimeout(() => {
-      let generatedText = '';
-      const targetingContext = targeting.industry ? 
-        `As a professional in the ${targeting.industry} industry with ${targeting.experience} of experience` :
-        '';
-      
-      if (messageType === 'connection') {
-        generatedText = `Hi ${recipientName}, ${targetingContext ? targetingContext + ', ' : ''}I came across your profile while researching leaders in the AI and marketing space. Your work at your company, particularly your focus on integrating AI tools into marketing strategies, resonates with my current projects. I would love to connect and perhaps exchange ideas about how emerging AI technologies are reshaping content strategies. Looking forward to potentially collaborating!`;
-      } else if (messageType === 'prospecting') {
-        generatedText = `Hello ${recipientName}, ${targetingContext ? targetingContext + ', ' : ''}I noticed your recent post about the challenges of scaling personalized marketing campaigns. At my company, we have developed an AI solution that has helped marketing teams like yours increase engagement by 40% while reducing campaign creation time by half. I would be happy to share how our approach might address the specific challenges you mentioned. Would you be open to a 15-minute call next week?`;
-      } else if (messageType === 'followup') {
-        generatedText = `Hi again ${recipientName}, I wanted to follow up on our conversation about optimizing your LinkedIn content strategy. As promised, I have attached that case study showing how we helped a similar company increase their engagement by 60% in just two months. I am available this Thursday or Friday if you would like to discuss how these approaches could be tailored to your specific audience. Looking forward to your thoughts!`;
-      }
-      
-      setGeneratedMessage(generatedText);
+    try {
+      const targetingContext = targeting.industry
+        ? `As a professional in the ${targeting.industry} industry with ${targeting.experience} of experience, `
+        : '';
+      const promptText = `${targetingContext}${prompt}`;
+      const text = await generateContent(promptText);
+      setGeneratedMessage(text);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to generate message');
+    } finally {
       setIsGenerating(false);
-    }, 1500);
+    }
   };
 
   const applyTemplate = (template: string) => {
     setPrompt(template.replace('[recipient]', recipientName));
   };
 
-  const handleSend = () => {
-    // Mock send functionality
-    alert(`Message to ${recipientName} sent successfully!`);
+  const handleSend = async () => {
+    const token = import.meta.env.VITE_LINKEDIN_API_KEY;
+    if (!token) {
+      alert('LinkedIn API key not configured');
+      return;
+    }
+    try {
+      await sendLinkedInMessage(generatedMessage, recipientName, token);
+      alert(`Message to ${recipientName} sent successfully!`);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to send message');
+    }
   };
 
   const handleSaveTemplate = () => {

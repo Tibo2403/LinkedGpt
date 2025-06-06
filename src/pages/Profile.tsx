@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { User, Settings, Mail, Briefcase, MapPin, Share2, X, GraduationCap, Building } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Mail, Briefcase, MapPin, X, GraduationCap, Building } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -30,7 +30,7 @@ const Profile: React.FC = () => {
   const { user } = useAuthStore();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [linkedInProfile, setLinkedInProfile] = useState<LinkedInProfile>({
+  const [linkedInProfile] = useState<LinkedInProfile>({
     fullName: 'John Doe',
     headline: 'Senior Marketing Manager | Digital Strategy | AI & Automation',
     location: 'San Francisco Bay Area',
