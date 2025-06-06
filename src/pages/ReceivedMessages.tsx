@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, Search, Calendar, Filter, X } from 'lucide-react';
+import { Search, Calendar, Filter, X } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
