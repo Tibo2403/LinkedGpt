@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, Clock, Video, Users, X, Plus, ChevronLeft, ChevronRight, RefreshCw, MapPin, Linkedin, Edit, Trash2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, addDays } from 'date-fns';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
+import { fetchGoogleCalendarEvents, fetchOutlookEvents, fetchLinkedInEvents } from '../lib/api';
 
 interface Meeting {
   id: string;
@@ -30,14 +31,17 @@ interface CalendarCredentials {
   google?: {
     clientId: string;
     clientSecret: string;
+    token?: string;
   };
   outlook?: {
     clientId: string;
     clientSecret: string;
+    token?: string;
   };
   linkedin?: {
     clientId: string;
     clientSecret: string;
+    token?: string;
   };
 }
 
@@ -56,7 +60,6 @@ const Calendar: React.FC = () => {
   });
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
-  const [isOutlookConnected, setIsOutlookConnected] = useState(false);
   const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
@@ -159,96 +162,62 @@ const Calendar: React.FC = () => {
     setShowCredentialsModal(false);
   };
 
-  const handleGoogleAuth = () => {
+  const handleGoogleAuth = async () => {
     if (!credentials.google?.clientId || !credentials.google?.clientSecret) {
       setShowCredentialsModal(true);
       return;
     }
     window.open('https://accounts.google.com/o/oauth2/v2/auth', '_blank');
-    setTimeout(() => {
+    try {
+      const events = await fetchGoogleCalendarEvents(credentials.google.token!);
       setIsGoogleConnected(true);
-      const googleEvents: Meeting[] = [
-        {
-          id: 'g1',
-          title: 'Team Sync',
-          date: format(new Date(), 'yyyy-MM-dd'),
-          time: '14:00',
-          duration: 60,
-          type: 'video',
-          location: {
-            type: 'virtual',
-            platform: 'google-meet',
-            meetingLink: 'https://meet.google.com/xyz-abcd-efg',
-          },
-          attendees: ['team@company.com'],
-          source: 'google'
-        }
-      ];
-      setMeetings(prev => [...prev, ...googleEvents]);
-    }, 1000);
-  };
-
-  const handleOutlookAuth = () => {
-    if (!credentials.outlook?.clientId || !credentials.outlook?.clientSecret) {
-      setShowCredentialsModal(true);
-      return;
+      setMeetings(prev => [...prev, ...events]);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to fetch Google Calendar events');
     }
-    window.open('https://login.microsoftonline.com/common/oauth2/v2.0/authorize', '_blank');
-    setTimeout(() => {
-      setIsOutlookConnected(true);
-      const outlookEvents: Meeting[] = [
-        {
-          id: 'o1',
-          title: 'Client Meeting',
-          date: format(new Date(), 'yyyy-MM-dd'),
-          time: '11:00',
-          duration: 45,
-          type: 'video',
-          location: {
-            type: 'virtual',
-            platform: 'microsoft-teams',
-            meetingLink: 'https://teams.microsoft.com/l/meetup-join/abc123',
-          },
-          attendees: ['client@company.com'],
-          source: 'outlook'
-        }
-      ];
-      setMeetings(prev => [...prev, ...outlookEvents]);
-    }, 1000);
   };
 
-  const handleLinkedInAuth = () => {
+
+  const handleLinkedInAuth = async () => {
     if (!credentials.linkedin?.clientId || !credentials.linkedin?.clientSecret) {
       setShowCredentialsModal(true);
       return;
     }
     window.open('https://www.linkedin.com/oauth/v2/authorization', '_blank');
-    setTimeout(() => {
+    try {
+      const events = await fetchLinkedInEvents(credentials.linkedin.token!);
       setIsLinkedInConnected(true);
-      const linkedinEvents: Meeting[] = [
-        {
-          id: 'l1',
-          title: 'LinkedIn Network Meeting',
-          date: format(new Date(), 'yyyy-MM-dd'),
-          time: '15:00',
-          duration: 30,
-          type: 'video',
-          location: {
-            type: 'virtual',
-            meetingLink: 'https://linkedin.com/meeting/abc123',
-          },
-          attendees: ['contact@linkedin.com'],
-          source: 'linkedin'
-        }
-      ];
-      setMeetings(prev => [...prev, ...linkedinEvents]);
-    }, 1000);
+      setMeetings(prev => [...prev, ...events]);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to fetch LinkedIn events');
+    }
   };
 
   const handleSyncCalendars = async () => {
     setIsSyncing(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSyncing(false);
+    try {
+      const events: Meeting[] = [];
+      if (credentials.google?.token) {
+        const g = await fetchGoogleCalendarEvents(credentials.google.token);
+        events.push(...g);
+      }
+      if (credentials.outlook?.token) {
+        const o = await fetchOutlookEvents(credentials.outlook.token);
+        events.push(...o);
+      }
+      if (credentials.linkedin?.token) {
+        const l = await fetchLinkedInEvents(credentials.linkedin.token);
+        events.push(...l);
+      }
+      setMeetings(events);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to sync calendars');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const handlePreviousMonth = () => {
@@ -345,7 +314,7 @@ const Calendar: React.FC = () => {
     });
   };
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const { draggableId, source, destination } = result;
@@ -383,12 +352,12 @@ const Calendar: React.FC = () => {
         <div className="flex justify-between items-center flex-wrap gap-4">
           <div className="flex flex-wrap gap-4">
             <Button
-              variant={(isGoogleConnected || isOutlookConnected) ? 'outline' : 'primary'}
+              variant={isGoogleConnected ? 'outline' : 'primary'}
               onClick={handleGoogleAuth}
             >
-              {(isGoogleConnected || isOutlookConnected) 
-                ? 'Google/Outlook Calendar Connected' 
-                : 'Connect Google/Outlook Calendar'}
+              {isGoogleConnected
+                ? 'Google Calendar Connected'
+                : 'Connect Google Calendar'}
             </Button>
             <Button
               variant={isLinkedInConnected ? 'outline' : 'primary'}
@@ -399,7 +368,7 @@ const Calendar: React.FC = () => {
             </Button>
           </div>
           <div className="flex gap-4">
-            {(isGoogleConnected || isOutlookConnected || isLinkedInConnected) && (
+            {(isGoogleConnected || isLinkedInConnected) && (
               <Button
                 variant="outline"
                 onClick={handleSyncCalendars}
@@ -471,7 +440,7 @@ const Calendar: React.FC = () => {
                           <div className="font-medium text-sm">
                             {format(date, 'd')}
                           </div>
-                          {dayMeetings.map((meeting, index) => (
+                          {dayMeetings.map((meeting) => (
                             <div
                               key={meeting.id}
                               className={`mt-1 text-xs p-1 rounded truncate cursor-pointer ${
