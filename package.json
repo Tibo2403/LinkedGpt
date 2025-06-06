@@ -11,6 +11,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "@supabase/auth-ui-react": "^0.4.7",
     "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/supabase-js": "^2.39.3",
@@ -22,7 +23,6 @@
     "jspdf": "^2.5.2",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
-    "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^14.0.5",
     "react-router-dom": "^6.23.0",
@@ -34,7 +34,6 @@
     "@testing-library/react": "^14.1.2",
     "@types/file-saver": "^2.0.7",
     "@types/react": "^18.3.5",
-    "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.18",
