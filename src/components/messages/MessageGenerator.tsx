@@ -15,6 +15,11 @@ interface RecipientTarget {
   location?: string;
 }
 
+const recipientUrnMap: Record<string, string> = {
+  'Sarah Johnson': 'urn:li:person:sarahjohnson',
+  'John Doe': 'urn:li:person:johndoe',
+};
+
 const MessageGenerator: React.FC = () => {
   const [recipientName, setRecipientName] = useState('');
   const [prompt, setPrompt] = useState('');
@@ -116,8 +121,15 @@ const MessageGenerator: React.FC = () => {
       alert('LinkedIn API key not configured');
       return;
     }
+
+    const recipientUrn = recipientUrnMap[recipientName];
+    if (!recipientUrn) {
+      alert('Unknown recipient. Please use a mapped name.');
+      return;
+    }
+
     try {
-      await sendLinkedInMessage(generatedMessage, recipientName, token);
+      await sendLinkedInMessage(generatedMessage, recipientUrn, token);
       alert(`Message to ${recipientName} sent successfully!`);
     } catch (err) {
       console.error(err);
@@ -137,7 +149,7 @@ const MessageGenerator: React.FC = () => {
           <div className="mb-4">
             <Input
               label="Recipient Name"
-              placeholder="Enter recipient's name"
+              placeholder="Enter recipient's name (e.g., Sarah Johnson)"
               value={recipientName}
               onChange={(e) => setRecipientName(e.target.value)}
             />
@@ -321,3 +333,4 @@ const MessageGenerator: React.FC = () => {
 };
 
 export default MessageGenerator;
+
