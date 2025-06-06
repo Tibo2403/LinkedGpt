@@ -119,6 +119,15 @@ supabase db push
 npm run dev
 ```
 
+
+### 6. Lancer les tests
+
+```bash
+npm test
+```
+
+Les tests unitaires se trouvent dans `src/__tests__` et utilisent Vitest.
+
 L'application sera disponible sur `http://localhost:5173`
 
 ## 🔧 Configuration des API
