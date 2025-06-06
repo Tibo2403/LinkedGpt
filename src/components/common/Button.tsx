@@ -1,12 +1,26 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 
+/**
+ * Reusable styled button component.
+ * Accepts all native button props plus styling options.
+ */
+
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   icon?: React.ReactNode;
 }
+
+/**
+ * Renders a clickable button element.
+ *
+ * @param props.variant - Visual style variant.
+ * @param props.size - Size variant of the button.
+ * @param props.isLoading - Displays a spinner when true.
+ * @param props.icon - Optional icon displayed before children.
+ */
 
 const Button: React.FC<ButtonProps> = ({
   children,

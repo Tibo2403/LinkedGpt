@@ -1,10 +1,22 @@
 import React from 'react';
 
+/**
+ * Text input field with optional label and icon.
+ */
+
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   icon?: React.ReactNode;
 }
+
+/**
+ * Renders a styled input element.
+ *
+ * @param props.label - Optional field label.
+ * @param props.error - Validation message displayed under the input.
+ * @param props.icon - Icon displayed inside the input.
+ */
 
 const Input: React.FC<InputProps> = ({
   label,

@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+
+/**
+ * Responsive navigation bar displayed on every page.
+ */
 import {
   Linkedin, Menu, X, User, Settings, LogOut, MessageSquare, 
   Inbox, FileText, Calendar as CalendarIcon, LayoutDashboard, FileEdit, History 
@@ -9,6 +13,9 @@ import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import LanguageSwitcher from './LanguageSwitcher';
 
+/**
+ * Contains site navigation links and profile menu.
+ */
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);

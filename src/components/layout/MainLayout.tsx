@@ -1,9 +1,17 @@
 import React from 'react';
+
+/**
+ * Overall page layout including navigation bar and footer.
+ */
 import Navbar from './Navbar';
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
+
+/**
+ * Wraps pages with navigation bar and footer elements.
+ */
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   return (

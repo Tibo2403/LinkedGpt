@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
+
+/**
+ * Form for storing and testing API keys used by the app.
+ */
 import { Key, RefreshCw, Check, X } from 'lucide-react';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import Input from '../common/Input';
 
+/**
+ * Lets a user connect or disconnect their LinkedIn and OpenAI APIs.
+ */
 const ApiSettings: React.FC = () => {
   const [linkedinApiKey, setLinkedinApiKey] = useState('');
   const [openaiApiKey, setOpenaiApiKey] = useState('');

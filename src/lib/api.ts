@@ -10,6 +10,13 @@ export class ApiException extends Error {
   }
 }
 
+/**
+ * Generates text using the OpenAI Chat Completion API.
+ *
+ * @param prompt - Text prompt describing the desired content.
+ * @returns The generated text from the model.
+ * @throws ApiException When the API key is missing or the request fails.
+ */
 export async function generateContent(prompt: string): Promise<string> {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   if (!apiKey) throw new ApiException('OpenAI API key not configured');
@@ -34,6 +41,13 @@ export async function generateContent(prompt: string): Promise<string> {
   }
 }
 
+/**
+ * Publishes a post to LinkedIn using the REST API.
+ *
+ * @param text - The body of the LinkedIn post.
+ * @param accessToken - OAuth token granting publish permissions.
+ * @throws ApiException When the request fails or a network error occurs.
+ */
 export async function sendLinkedInPost(text: string, accessToken: string) {
   try {
     const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
@@ -62,6 +76,14 @@ export async function sendLinkedInPost(text: string, accessToken: string) {
   }
 }
 
+/**
+ * Sends a direct message to a LinkedIn user.
+ *
+ * @param text - Message body to deliver.
+ * @param recipientUrn - LinkedIn URN of the recipient.
+ * @param accessToken - OAuth token with messaging permissions.
+ * @throws ApiException When the request fails or a network error occurs.
+ */
 export async function sendLinkedInMessage(
   text: string,
   recipientUrn: string,
@@ -88,6 +110,13 @@ export async function sendLinkedInMessage(
   }
 }
 
+/**
+ * Retrieves events from the user's primary Google Calendar.
+ *
+ * @param token - OAuth access token for the Google Calendar API.
+ * @returns A list of calendar event objects.
+ * @throws ApiException When the request fails or a network error occurs.
+ */
 export async function fetchGoogleCalendarEvents(token: string) {
   try {
     const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
@@ -101,6 +130,13 @@ export async function fetchGoogleCalendarEvents(token: string) {
   }
 }
 
+/**
+ * Fetches events from the authenticated user's Outlook calendar.
+ *
+ * @param token - OAuth token for the Microsoft Graph API.
+ * @returns A list of Outlook event objects.
+ * @throws ApiException When the request fails or a network error occurs.
+ */
 export async function fetchOutlookEvents(token: string) {
   try {
     const res = await fetch('https://graph.microsoft.com/v1.0/me/events', {
@@ -114,6 +150,13 @@ export async function fetchOutlookEvents(token: string) {
   }
 }
 
+/**
+ * Retrieves LinkedIn events accessible to the authenticated user.
+ *
+ * @param token - OAuth token for LinkedIn's API.
+ * @returns An array of LinkedIn event objects.
+ * @throws ApiException When the request fails or a network error occurs.
+ */
 export async function fetchLinkedInEvents(token: string) {
   try {
     const res = await fetch('https://api.linkedin.com/v2/events', {

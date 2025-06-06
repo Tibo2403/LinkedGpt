@@ -1,7 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
+
+/**
+ * Dropdown allowing the user to change i18n language.
+ */
 import { useTranslation } from 'react-i18next';
 import { Globe, ChevronDown } from 'lucide-react';
 
+/**
+ * Toggle list of available locales and updates the app language.
+ */
 const LanguageSwitcher: React.FC = () => {
   const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);

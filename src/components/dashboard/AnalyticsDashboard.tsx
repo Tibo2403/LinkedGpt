@@ -1,7 +1,14 @@
 import React from 'react';
+
+/**
+ * Visualizes basic engagement analytics using mock data.
+ */
 import { TrendingUp, Users, BarChart2, Activity } from 'lucide-react';
 import Card from '../common/Card';
 
+/**
+ * Dashboard showing charts and statistics for user engagement.
+ */
 const AnalyticsDashboard: React.FC = () => {
   // Mock data for demonstration
   const engagementData = {

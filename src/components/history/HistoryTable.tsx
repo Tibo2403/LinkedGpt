@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+
+/**
+ * Interactive table listing generated posts and messages.
+ */
 import { ExternalLink, Filter, ArrowUp, ArrowDown, X, Calendar, Search } from 'lucide-react';
 import Card from '../common/Card';
 import Button from '../common/Button';
@@ -29,6 +33,9 @@ interface Filters {
   };
 }
 
+/**
+ * Provides filtering and sorting for historic activity.
+ */
 const HistoryTable: React.FC = () => {
   const [sortField, setSortField] = useState<keyof HistoryItem>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
