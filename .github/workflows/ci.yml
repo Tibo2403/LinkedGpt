@@ -8,7 +8,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x] # test multi-version Node.js
+        node-version: [18.x, 20.x] # Test multi-version Node.js
 
     steps:
       # Checkout code
@@ -20,7 +20,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      # Cache npm (accélère builds)
+      # Cache npm (accélère les builds)
       - name: Cache node modules
         uses: actions/cache@v3
         with:
@@ -32,18 +32,18 @@ jobs:
       # Install dependencies
       - run: npm ci
 
-      # Lint (style / règles)
+      # Lint
       - run: npm run lint
 
       # Type check (si TypeScript)
       - name: TypeScript type check
         run: npx tsc --noEmit
 
-      # Build (vérifie que ça compile)
+      # Build (vérifie que le projet compile)
       - run: npm run build
 
       # Run tests with coverage
-      - run: npm test -- --coverage
+      - run: npm run test -- --coverage
 
       # Upload coverage report
       - name: Upload coverage report
@@ -52,7 +52,7 @@ jobs:
           name: coverage-report
           path: coverage
 
-      # Security audit (npm audit)
+      # Security audit
       - name: Run npm audit
         run: npm audit --audit-level=high
 
