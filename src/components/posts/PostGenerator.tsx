@@ -23,6 +23,8 @@ interface ImagePreview {
  */
 const PostGenerator: React.FC = () => {
   const [prompt, setPrompt] = useState('');
+  const [tone, setTone] = useState('');
+  const [hashtags, setHashtags] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showScheduler, setShowScheduler] = useState(false);
@@ -97,7 +99,7 @@ const PostGenerator: React.FC = () => {
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const text = await generateContent(prompt);
+      const text = await generateContent(prompt, tone, hashtags);
       setGeneratedContent(text);
     } catch (err) {
       console.error(err);
@@ -118,7 +120,10 @@ const PostGenerator: React.FC = () => {
       return;
     }
     try {
-      await sendLinkedInPost(generatedContent, token);
+      const finalText = hashtags
+        ? `${generatedContent}\n\n${hashtags}`
+        : generatedContent;
+      await sendLinkedInPost(finalText, token);
       alert('Post published successfully!');
     } catch (err) {
       console.error(err);
@@ -143,7 +148,25 @@ const PostGenerator: React.FC = () => {
               onChange={(e) => setPrompt(e.target.value)}
             />
           </div>
-          
+
+          <div className="mb-4">
+            <Input
+              label="Tone/Voice"
+              placeholder="e.g., professional, friendly"
+              value={tone}
+              onChange={(e) => setTone(e.target.value)}
+            />
+          </div>
+
+          <div className="mb-4">
+            <Input
+              label="Hashtags"
+              placeholder="#ai, #career"
+              value={hashtags}
+              onChange={(e) => setHashtags(e.target.value)}
+            />
+          </div>
+
           <div className="mb-6 flex flex-wrap gap-4">
             <Button
               onClick={handleGenerate}
