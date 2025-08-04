@@ -9,6 +9,8 @@ import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
 import { generateContent, sendLinkedInPost, ApiException } from '../../lib/api';
+import { useHistoryStore } from '../../stores/historyStore';
+import { useAuthStore } from '../../stores/authStore';
 
 
 interface ImagePreview {
@@ -33,6 +35,9 @@ const PostGenerator: React.FC = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [selectedImages, setSelectedImages] = useState<ImagePreview[]>([]);
   const [dragActive, setDragActive] = useState(false);
+
+  const addPost = useHistoryStore((state) => state.addPost);
+  const user = useAuthStore((state) => state.user);
   
 
   const handleImageUpload = (files: FileList | null) => {
@@ -99,6 +104,12 @@ const PostGenerator: React.FC = () => {
     try {
       const text = await generateContent(prompt);
       setGeneratedContent(text);
+      addPost({
+        id: Date.now().toString(),
+        content: text,
+        status: 'draft',
+        userId: user?.id || 'anonymous',
+      });
     } catch (err) {
       console.error(err);
       if (err instanceof ApiException) {
@@ -119,6 +130,13 @@ const PostGenerator: React.FC = () => {
     }
     try {
       await sendLinkedInPost(generatedContent, token);
+      addPost({
+        id: Date.now().toString(),
+        content: generatedContent,
+        status: 'published',
+        publishedDate: new Date().toISOString(),
+        userId: user?.id || 'anonymous',
+      });
       alert('Post published successfully!');
     } catch (err) {
       console.error(err);
