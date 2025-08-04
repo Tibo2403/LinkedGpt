@@ -15,10 +15,17 @@ export class ApiException extends Error {
  *
  * @param prompt - Text prompt describing the desired content.
  * @param platform - Target platform for the content which influences tone and style.
+ * @param tone - Desired tone for the generated content.
+ * @param hashtags - Optional list of hashtags to influence the generation.
  * @returns The generated text from the model.
  * @throws ApiException When the API key is missing or the request fails.
  */
-export async function generateContent(prompt: string, platform: string): Promise<string> {
+export async function generateContent(
+  prompt: string,
+  platform: string,
+  tone: string,
+  hashtags?: string[],
+): Promise<string> {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   if (!apiKey) throw new ApiException('OpenAI API key not configured');
 
@@ -41,7 +48,10 @@ export async function generateContent(prompt: string, platform: string): Promise
         model: 'gpt-3.5-turbo',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt },
+          {
+            role: 'user',
+            content: `${prompt}\nTone: ${tone}\nHashtags: ${hashtags?.join(' ')}`,
+          },
         ],
       }),
     });
