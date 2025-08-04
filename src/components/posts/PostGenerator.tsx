@@ -24,6 +24,8 @@ interface ImagePreview {
 const PostGenerator: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
+  const [variations, setVariations] = useState<string[]>([]);
+  const [variationCount, setVariationCount] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showScheduler, setShowScheduler] = useState(false);
   const [showTargeting, setShowTargeting] = useState(false);
@@ -97,8 +99,9 @@ const PostGenerator: React.FC = () => {
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const text = await generateContent(prompt);
-      setGeneratedContent(text);
+      const texts = await generateContent(prompt, variationCount);
+      setVariations(texts);
+      setGeneratedContent(texts[0] || '');
     } catch (err) {
       console.error(err);
       if (err instanceof ApiException) {
@@ -143,7 +146,17 @@ const PostGenerator: React.FC = () => {
               onChange={(e) => setPrompt(e.target.value)}
             />
           </div>
-          
+
+          <div className="mb-4">
+            <Input
+              type="number"
+              label="Number of Variations"
+              min={1}
+              value={variationCount}
+              onChange={(e) => setVariationCount(Math.max(1, Number(e.target.value)))}
+            />
+          </div>
+
           <div className="mb-6 flex flex-wrap gap-4">
             <Button
               onClick={handleGenerate}
@@ -161,6 +174,22 @@ const PostGenerator: React.FC = () => {
               {showTargeting ? 'Hide Targeting' : 'Show Targeting'}
             </Button>
           </div>
+
+          {variations.length > 1 && (
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Variations</h4>
+              <div className="space-y-4">
+                {variations.map((text, index) => (
+                  <div key={index} className="p-4 border rounded-md">
+                    <p className="text-sm whitespace-pre-wrap mb-2">{text}</p>
+                    <Button size="sm" onClick={() => setGeneratedContent(text)}>
+                      Select
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {generatedContent && (
             <div className="mb-6">

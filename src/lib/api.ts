@@ -14,10 +14,11 @@ export class ApiException extends Error {
  * Generates text using the OpenAI Chat Completion API.
  *
  * @param prompt - Text prompt describing the desired content.
- * @returns The generated text from the model.
+ * @param n - Number of variations to generate. Defaults to 1.
+ * @returns An array of generated texts from the model.
  * @throws ApiException When the API key is missing or the request fails.
  */
-export async function generateContent(prompt: string): Promise<string> {
+export async function generateContent(prompt: string, n = 1): Promise<string[]> {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   if (!apiKey) throw new ApiException('OpenAI API key not configured');
   try {
@@ -30,11 +31,12 @@ export async function generateContent(prompt: string): Promise<string> {
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
         messages: [{ role: 'user', content: prompt }],
+        n,
       }),
     });
     if (!response.ok) throw new ApiException('Failed to generate content', response.status);
     const data = await response.json();
-    return data.choices[0].message.content.trim();
+    return data.choices.map((choice: any) => choice.message.content.trim());
   } catch (err) {
     if (err instanceof ApiException) throw err;
     throw new ApiException('Network error while generating content');

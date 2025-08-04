@@ -16,7 +16,7 @@ vi.mock('../lib/api', async () => {
 describe('MessageGenerator', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (generateContent as unknown as vi.Mock).mockResolvedValue('Generated');
+    (generateContent as unknown as vi.Mock).mockResolvedValue(['Generated']);
     const env = import.meta.env as Record<string, string>;
     env.VITE_LINKEDIN_API_KEY = 'token';
   });
