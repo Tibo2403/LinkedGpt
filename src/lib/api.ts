@@ -14,12 +14,22 @@ export class ApiException extends Error {
  * Generates text using the OpenAI Chat Completion API.
  *
  * @param prompt - Text prompt describing the desired content.
+ * @param platform - Target platform for the content which influences tone and style.
  * @returns The generated text from the model.
  * @throws ApiException When the API key is missing or the request fails.
  */
-export async function generateContent(prompt: string): Promise<string> {
+export async function generateContent(prompt: string, platform: string): Promise<string> {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   if (!apiKey) throw new ApiException('OpenAI API key not configured');
+
+  const platformPrompts: Record<string, string> = {
+    LinkedIn: 'You are a professional assistant crafting LinkedIn posts in a business tone.',
+    Twitter: 'You are a witty assistant crafting concise tweets (280 characters max).',
+    Facebook: 'You are a friendly assistant creating engaging Facebook updates.',
+  };
+
+  const systemPrompt = platformPrompts[platform] || 'You are a helpful social media assistant.';
+
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -29,7 +39,10 @@ export async function generateContent(prompt: string): Promise<string> {
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }],
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt },
+        ],
       }),
     });
     if (!response.ok) throw new ApiException('Failed to generate content', response.status);
@@ -73,6 +86,80 @@ export async function sendLinkedInPost(text: string, accessToken: string) {
   } catch (err) {
     if (err instanceof ApiException) throw err;
     throw new ApiException('Network error while publishing post');
+  }
+}
+
+/**
+ * Publishes a tweet using the Twitter API.
+ *
+ * @param text - Tweet content.
+ * @param accessToken - OAuth token granting publish permissions.
+ * @throws ApiException When the request fails or a network error occurs.
+ */
+export async function sendTwitterPost(text: string, accessToken: string) {
+  try {
+    const response = await fetch('https://api.twitter.com/2/tweets', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text }),
+    });
+    if (!response.ok) throw new ApiException('Failed to publish post', response.status);
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while publishing post');
+  }
+}
+
+/**
+ * Publishes a post to Facebook using the Graph API.
+ *
+ * @param text - The body of the Facebook post.
+ * @param accessToken - OAuth token granting publish permissions.
+ * @throws ApiException When the request fails or a network error occurs.
+ */
+export async function sendFacebookPost(text: string, accessToken: string) {
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/me/feed?access_token=${accessToken}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: text }),
+      },
+    );
+    if (!response.ok) throw new ApiException('Failed to publish post', response.status);
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while publishing post');
+  }
+}
+
+/**
+ * Routes post publication to the correct platform-specific function.
+ *
+ * @param text - Content to publish.
+ * @param platform - Target platform.
+ * @param accessToken - OAuth token granting publish permissions.
+ */
+export async function publishPost(
+  text: string,
+  platform: string,
+  accessToken: string,
+) {
+  switch (platform) {
+    case 'LinkedIn':
+      return sendLinkedInPost(text, accessToken);
+    case 'Twitter':
+      return sendTwitterPost(text, accessToken);
+    case 'Facebook':
+      return sendFacebookPost(text, accessToken);
+    default:
+      throw new ApiException('Unsupported platform');
   }
 }
 

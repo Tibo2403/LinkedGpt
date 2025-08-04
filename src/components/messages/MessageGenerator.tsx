@@ -110,7 +110,7 @@ const MessageGenerator: React.FC = () => {
         ? `As a professional in the ${targeting.industry} industry with ${targeting.experience} of experience, `
         : '';
       const promptText = `${targetingContext}${prompt}`;
-      const text = await generateContent(promptText);
+      const text = await generateContent(promptText, 'LinkedIn');
       setGeneratedMessage(text);
     } catch (err) {
       console.error(err);
