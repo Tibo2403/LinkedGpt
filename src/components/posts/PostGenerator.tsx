@@ -8,7 +8,7 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, sendLinkedInPost, ApiException } from '../../lib/api';
+import { generateContent, publishPost, ApiException } from '../../lib/api';
 
 
 interface ImagePreview {
@@ -33,6 +33,7 @@ const PostGenerator: React.FC = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [selectedImages, setSelectedImages] = useState<ImagePreview[]>([]);
   const [dragActive, setDragActive] = useState(false);
+  const [platform, setPlatform] = useState('LinkedIn');
   
 
   const handleImageUpload = (files: FileList | null) => {
@@ -97,7 +98,7 @@ const PostGenerator: React.FC = () => {
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const text = await generateContent(prompt);
+      const text = await generateContent(prompt, platform);
       setGeneratedContent(text);
     } catch (err) {
       console.error(err);
@@ -112,13 +113,14 @@ const PostGenerator: React.FC = () => {
   };
 
   const handlePublish = async () => {
-    const token = import.meta.env.VITE_LINKEDIN_API_KEY;
+    const env = import.meta.env as Record<string, string | undefined>;
+    const token = env[`VITE_${platform.toUpperCase()}_API_KEY`];
     if (!token) {
-      alert('LinkedIn API key not configured');
+      alert(`${platform} API key not configured`);
       return;
     }
     try {
-      await sendLinkedInPost(generatedContent, token);
+      await publishPost(generatedContent, platform, token);
       alert('Post published successfully!');
     } catch (err) {
       console.error(err);
@@ -131,9 +133,23 @@ const PostGenerator: React.FC = () => {
   };
 
   return (
-    <Card title="Create LinkedIn Post">
+    <Card title="Create Social Media Post">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Platform
+            </label>
+            <select
+              value={platform}
+              onChange={(e) => setPlatform(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0A66C2] focus:ring-[#0A66C2]"
+            >
+              <option value="LinkedIn">LinkedIn</option>
+              <option value="Twitter">Twitter</option>
+              <option value="Facebook">Facebook</option>
+            </select>
+          </div>
           <div className="mb-4">
             <TextArea
               label="What would you like to post about?"

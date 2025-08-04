@@ -1,14 +1,14 @@
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import PostGenerator from '../components/posts/PostGenerator';
-import { generateContent, sendLinkedInPost } from '../lib/api';
+import { generateContent, publishPost } from '../lib/api';
 
 vi.mock('../lib/api', async () => {
   const actual = await vi.importActual<typeof import('../lib/api')>('../lib/api');
   return {
     ...actual,
     generateContent: vi.fn(),
-    sendLinkedInPost: vi.fn(),
+    publishPost: vi.fn(),
     sendLinkedInMessage: vi.fn(),
   };
 });
@@ -45,6 +45,6 @@ describe('PostGenerator', () => {
     await waitFor(() => expect(generateContent).toHaveBeenCalled());
 
     fireEvent.click(screen.getByText(/publish now/i));
-    await waitFor(() => expect(sendLinkedInPost).toHaveBeenCalledWith('Generated', 'token'));
+    await waitFor(() => expect(publishPost).toHaveBeenCalledWith('Generated', 'LinkedIn', 'token'));
   });
 });

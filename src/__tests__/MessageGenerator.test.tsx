@@ -8,7 +8,7 @@ vi.mock('../lib/api', async () => {
   return {
     ...actual,
     generateContent: vi.fn(),
-    sendLinkedInPost: vi.fn(),
+    publishPost: vi.fn(),
     sendLinkedInMessage: vi.fn(),
   };
 });
