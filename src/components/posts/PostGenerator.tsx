@@ -34,6 +34,16 @@ const PostGenerator: React.FC = () => {
   const [selectedImages, setSelectedImages] = useState<ImagePreview[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [platform, setPlatform] = useState('LinkedIn');
+  const [tone, setTone] = useState('Professional');
+  const [hashtags, setHashtags] = useState('');
+
+  const formatHashtags = (tags: string) =>
+    tags
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(Boolean)
+      .map(tag => (tag.startsWith('#') ? tag : `#${tag}`))
+      .join(' ');
   
 
   const handleImageUpload = (files: FileList | null) => {
@@ -98,7 +108,11 @@ const PostGenerator: React.FC = () => {
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const text = await generateContent(prompt, platform);
+      const tags = formatHashtags(hashtags);
+      const promptWithOptions = `${prompt}${tone ? `\nTone: ${tone}` : ''}${
+        tags ? `\nInclude these hashtags: ${tags}` : ''
+      }`;
+      const text = await generateContent(promptWithOptions, platform);
       setGeneratedContent(text);
     } catch (err) {
       console.error(err);
@@ -120,7 +134,11 @@ const PostGenerator: React.FC = () => {
       return;
     }
     try {
-      await publishPost(generatedContent, platform, token);
+      const tags = formatHashtags(hashtags);
+      const contentToPublish = tags
+        ? `${generatedContent}\n\n${tags}`
+        : generatedContent;
+      await publishPost(contentToPublish, platform, token);
       alert('Post published successfully!');
     } catch (err) {
       console.error(err);
@@ -159,7 +177,31 @@ const PostGenerator: React.FC = () => {
               onChange={(e) => setPrompt(e.target.value)}
             />
           </div>
-          
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tone
+              </label>
+              <select
+                value={tone}
+                onChange={(e) => setTone(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0A66C2] focus:ring-[#0A66C2]"
+              >
+                <option value="Professional">Professional</option>
+                <option value="Casual">Casual</option>
+                <option value="Friendly">Friendly</option>
+                <option value="Humorous">Humorous</option>
+              </select>
+            </div>
+            <Input
+              label="Hashtags"
+              placeholder="e.g. ai, marketing, startup"
+              value={hashtags}
+              onChange={(e) => setHashtags(e.target.value)}
+            />
+          </div>
+
           <div className="mb-6 flex flex-wrap gap-4">
             <Button
               onClick={handleGenerate}
