@@ -14,13 +14,23 @@ export class ApiException extends Error {
  * Generates text using the OpenAI Chat Completion API.
  *
  * @param prompt - Text prompt describing the desired content.
+ * @param tone - Desired tone or voice for the generated text.
+ * @param hashtags - Optional hashtags to incorporate into the content.
  * @returns The generated text from the model.
  * @throws ApiException When the API key is missing or the request fails.
  */
-export async function generateContent(prompt: string): Promise<string> {
+export async function generateContent(
+  prompt: string,
+  tone?: string,
+  hashtags?: string,
+): Promise<string> {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   if (!apiKey) throw new ApiException('OpenAI API key not configured');
   try {
+    const parts = [prompt];
+    if (tone) parts.push(`Tone/Voice: ${tone}`);
+    if (hashtags) parts.push(`Include these hashtags: ${hashtags}`);
+    const fullPrompt = parts.join('\n');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -29,7 +39,7 @@ export async function generateContent(prompt: string): Promise<string> {
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user', content: fullPrompt }],
       }),
     });
     if (!response.ok) throw new ApiException('Failed to generate content', response.status);
