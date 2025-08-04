@@ -43,8 +43,17 @@ describe('PostGenerator', () => {
     );
     fireEvent.click(screen.getByText(/generate content/i));
     await waitFor(() => expect(generateContent).toHaveBeenCalled());
+    fireEvent.change(screen.getByLabelText(/hashtags/i), {
+      target: { value: '#one #two' },
+    });
 
     fireEvent.click(screen.getByText(/publish now/i));
-    await waitFor(() => expect(publishPost).toHaveBeenCalledWith('Generated', 'LinkedIn', 'token'));
+    await waitFor(() =>
+      expect(publishPost).toHaveBeenCalledWith(
+        'Generated #one #two',
+        'LinkedIn',
+        'token',
+      ),
+    );
   });
 });

@@ -34,6 +34,7 @@ const PostGenerator: React.FC = () => {
   const [selectedImages, setSelectedImages] = useState<ImagePreview[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [platform, setPlatform] = useState('LinkedIn');
+  const [hashtags, setHashtags] = useState('');
   
 
   const handleImageUpload = (files: FileList | null) => {
@@ -119,8 +120,15 @@ const PostGenerator: React.FC = () => {
       alert(`${platform} API key not configured`);
       return;
     }
+    const trimmedHashtags = hashtags.trim();
+    const baseContent = generatedContent.trim();
+    const finalContent =
+      trimmedHashtags && !baseContent.endsWith(trimmedHashtags)
+        ? `${baseContent} ${trimmedHashtags}`
+        : baseContent;
+    setGeneratedContent(finalContent);
     try {
-      await publishPost(generatedContent, platform, token);
+      await publishPost(finalContent, platform, token);
       alert('Post published successfully!');
     } catch (err) {
       console.error(err);
@@ -201,6 +209,15 @@ const PostGenerator: React.FC = () => {
                     <Sparkles className="h-4 w-4 text-[#0A66C2]" />
                   </Button>
                 </div>
+              </div>
+              <div className="mt-4">
+                <Input
+                  label="Hashtags"
+                  placeholder="#example #tags"
+                  value={hashtags}
+                  onChange={(e) => setHashtags(e.target.value)}
+                  name="hashtags"
+                />
               </div>
             </div>
           )}
