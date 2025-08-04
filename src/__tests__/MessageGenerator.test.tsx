@@ -37,7 +37,9 @@ describe('MessageGenerator', () => {
       { target: { value: 'Hello' } },
     );
     fireEvent.click(screen.getByText(/generate message/i));
-    await waitFor(() => expect(generateContent).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(generateContent).toHaveBeenCalledWith('Hello', 'LinkedIn', 'neutral', []),
+    );
   });
 
   it('sends generated message when send button is clicked', async () => {
@@ -52,7 +54,9 @@ describe('MessageGenerator', () => {
       { target: { value: 'Hello' } },
     );
     fireEvent.click(screen.getByText(/generate message/i));
-    await waitFor(() => expect(generateContent).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(generateContent).toHaveBeenCalledWith('Hello', 'LinkedIn', 'neutral', []),
+    );
 
     fireEvent.click(screen.getByText(/send message/i));
     await waitFor(() => expect(sendLinkedInMessage).toHaveBeenCalledWith('Generated', 'urn:li:person:john123', 'token'));

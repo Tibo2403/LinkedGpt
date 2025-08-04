@@ -98,7 +98,7 @@ const PostGenerator: React.FC = () => {
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const text = await generateContent(prompt, platform);
+      const text = await generateContent(prompt, platform, 'neutral', []);
       setGeneratedContent(text);
     } catch (err) {
       console.error(err);
