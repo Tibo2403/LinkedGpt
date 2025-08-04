@@ -32,7 +32,9 @@ describe('PostGenerator', () => {
       { target: { value: 'Topic' } },
     );
     fireEvent.click(screen.getByText(/generate content/i));
-    await waitFor(() => expect(generateContent).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(generateContent).toHaveBeenCalledWith('Topic', 'LinkedIn', 'neutral', []),
+    );
   });
 
   it('publishes generated content when publish button is clicked', async () => {
@@ -42,7 +44,9 @@ describe('PostGenerator', () => {
       { target: { value: 'Topic' } },
     );
     fireEvent.click(screen.getByText(/generate content/i));
-    await waitFor(() => expect(generateContent).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(generateContent).toHaveBeenCalledWith('Topic', 'LinkedIn', 'neutral', []),
+    );
 
     fireEvent.click(screen.getByText(/publish now/i));
     await waitFor(() => expect(publishPost).toHaveBeenCalledWith('Generated', 'LinkedIn', 'token'));
