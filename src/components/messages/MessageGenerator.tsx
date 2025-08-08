@@ -8,7 +8,8 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, sendLinkedInMessage, ApiException } from '../../lib/api';
+import { generateContent, sendLinkedInMessage, ApiException, saveMessage } from '../../lib/api';
+import { useAuthStore } from '../../stores/authStore';
 
 interface RecipientTarget {
   industry?: string;
@@ -38,6 +39,7 @@ const MessageGenerator: React.FC = () => {
     education: '',
     location: ''
   });
+  const user = useAuthStore((state) => state.user);
 
   const messageTypes = [
     { id: 'connection', name: 'Connection Request', icon: <Users className="h-4 w-4" /> },
@@ -141,6 +143,14 @@ const MessageGenerator: React.FC = () => {
     }
     try {
       await sendLinkedInMessage(generatedMessage, urn, token);
+      if (user) {
+        await saveMessage({
+          user_id: user.id,
+          content: generatedMessage,
+          platform: 'LinkedIn',
+          status: 'sent',
+        });
+      }
       alert(`Message to ${recipientName} sent successfully!`);
     } catch (err) {
       console.error(err);

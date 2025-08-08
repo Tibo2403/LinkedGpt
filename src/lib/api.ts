@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 export class ApiException extends Error {
   status?: number;
   code?: string;
@@ -161,6 +163,64 @@ export async function publishPost(
     default:
       throw new ApiException('Unsupported platform');
   }
+}
+
+export interface PostRecord {
+  id?: string;
+  user_id: string;
+  content: string;
+  platform: string;
+  status: string;
+  engagement?: Record<string, unknown>;
+  created_at?: string;
+}
+
+export interface MessageRecord {
+  id?: string;
+  user_id: string;
+  content: string;
+  platform: string;
+  status: string;
+  engagement?: Record<string, unknown>;
+  created_at?: string;
+}
+
+export type HistoryRecord =
+  | (PostRecord & { type: 'post' })
+  | (MessageRecord & { type: 'message' });
+
+export async function savePost(post: PostRecord) {
+  const { error } = await supabase.from('posts').insert(post);
+  if (error) throw new ApiException('Failed to save post', error.status, error.code);
+}
+
+export async function saveMessage(message: MessageRecord) {
+  const { error } = await supabase.from('messages').insert(message);
+  if (error) throw new ApiException('Failed to save message', error.status, error.code);
+}
+
+export async function fetchHistory(userId: string): Promise<HistoryRecord[]> {
+  const { data: posts, error: postsError } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('user_id', userId);
+  if (postsError) throw new ApiException('Failed to fetch posts', postsError.status, postsError.code);
+
+  const { data: messages, error: messagesError } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('user_id', userId);
+  if (messagesError)
+    throw new ApiException('Failed to fetch messages', messagesError.status, messagesError.code);
+
+  const combined: HistoryRecord[] = [
+    ...(posts ?? []).map((p) => ({ ...p, type: 'post' as const })),
+    ...(messages ?? []).map((m) => ({ ...m, type: 'message' as const })),
+  ];
+
+  return combined.sort(
+    (a, b) => new Date(b.created_at ?? '').getTime() - new Date(a.created_at ?? '').getTime(),
+  );
 }
 
 /**

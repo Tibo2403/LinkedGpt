@@ -8,7 +8,8 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, publishPost, ApiException } from '../../lib/api';
+import { generateContent, publishPost, ApiException, savePost } from '../../lib/api';
+import { useAuthStore } from '../../stores/authStore';
 
 
 interface ImagePreview {
@@ -36,6 +37,7 @@ const PostGenerator: React.FC = () => {
   const [platform, setPlatform] = useState('LinkedIn');
   const [tone, setTone] = useState('Professional');
   const [hashtags, setHashtags] = useState('');
+  const user = useAuthStore((state) => state.user);
 
   const formatHashtags = (tags: string) =>
     tags
@@ -139,6 +141,14 @@ const PostGenerator: React.FC = () => {
         ? `${generatedContent}\n\n${tags}`
         : generatedContent;
       await publishPost(contentToPublish, platform, token);
+      if (user) {
+        await savePost({
+          user_id: user.id,
+          content: contentToPublish,
+          platform,
+          status: 'published',
+        });
+      }
       alert('Post published successfully!');
     } catch (err) {
       console.error(err);

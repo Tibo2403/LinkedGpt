@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
  * Interactive table listing generated posts and messages.
@@ -7,6 +7,8 @@ import { ExternalLink, Filter, ArrowUp, ArrowDown, X, Calendar, Search } from 'l
 import Card from '../common/Card';
 import Button from '../common/Button';
 import Input from '../common/Input';
+import { fetchHistory } from '../../lib/api';
+import { useAuthStore } from '../../stores/authStore';
 
 interface HistoryItem {
   id: string;
@@ -53,66 +55,44 @@ const HistoryTable: React.FC = () => {
     }
   });
 
-  const historyData: HistoryItem[] = [
-    {
-      id: '1',
-      type: 'post',
-      title: 'LinkedIn algorithm changes for 2025',
-      date: '2025-01-15',
-      status: 'published',
-      content: 'LinkedIn has announced major changes to their algorithm, focusing on authentic engagement and professional content. Here are the key updates that will affect how your content performs...',
-      engagement: {
-        views: 1243,
-        likes: 56,
-        comments: 12,
-      },
-    },
-    {
-      id: '2',
-      type: 'message',
-      title: 'Connection request to Sarah Johnson',
-      date: '2025-01-12',
-      status: 'sent',
-      content: 'Hi Sarah, I noticed we share an interest in AI-driven marketing strategies. Would love to connect and exchange ideas about how AI is transforming the marketing landscape.',
-    },
-    {
-      id: '3',
-      type: 'post',
-      title: 'Top 5 AI tools for content creators',
-      date: '2025-01-10',
-      status: 'published',
-      content: 'As content creation evolves, AI tools are becoming indispensable. Here are the top 5 AI tools that every content creator should consider...',
-      engagement: {
-        views: 3621,
-        likes: 142,
-        comments: 28,
-      },
-    },
-    {
-      id: '4',
-      type: 'message',
-      title: 'Follow-up with Michael Brown',
-      date: '2025-01-08',
-      status: 'sent',
-      content: 'Hi Michael, I wanted to follow up on our conversation about AI implementation in marketing workflows. Have you had a chance to review the resources I shared?',
-    },
-    {
-      id: '5',
-      type: 'post',
-      title: 'Why AI integration is essential for modern marketing',
-      date: '2025-01-05',
-      status: 'draft',
-      content: 'Draft: In today\'s rapidly evolving digital landscape, AI integration has become more than just a buzzword...',
-    },
-    {
-      id: '6',
-      type: 'post',
-      title: 'Case study: How we increased engagement by 200%',
-      date: '2025-01-03',
-      status: 'scheduled',
-      content: 'Scheduled: A detailed analysis of how our team leveraged AI tools to dramatically improve our social media engagement...',
-    },
-  ];
+  const [historyData, setHistoryData] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const user = useAuthStore((state) => state.user);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const data = await fetchHistory(user.id);
+        const mapped: HistoryItem[] = data.map((item) => ({
+          id: item.id,
+          type: item.type,
+          title: item.content.slice(0, 50),
+          date: item.created_at,
+          status: item.status as HistoryItem['status'],
+          content: item.content,
+          engagement: item.engagement as HistoryItem['engagement'],
+        }));
+        setHistoryData(mapped);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <Card title="Activity History">
+        <div className="p-4 text-center text-gray-500">Loading history...</div>
+      </Card>
+    );
+  }
 
   const handleSort = (field: keyof HistoryItem) => {
     if (sortField === field) {
