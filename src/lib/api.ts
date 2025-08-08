@@ -204,6 +204,51 @@ export async function publishPost(
 }
 
 /**
+ * Stores a scheduled post in Supabase for later publication.
+ *
+ * @param userId - ID of the user creating the post.
+ * @param content - Post content to be published.
+ * @param platforms - Array of target platforms.
+ * @param scheduledAt - ISO timestamp when the post should be published.
+ * @throws ApiException When the request fails or a network error occurs.
+ */
+export async function schedulePost(
+  userId: string,
+  content: string,
+  platforms: string[],
+  scheduledAt: string,
+) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new ApiException('Supabase not configured');
+  }
+
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/scheduled_posts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        content,
+        platforms,
+        scheduled_at: scheduledAt,
+        status: 'pending',
+      }),
+    });
+    if (!response.ok) throw new ApiException('Failed to schedule post', response.status);
+    return response.json();
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while scheduling post');
+  }
+}
+
+/**
  * Sends a direct message to a LinkedIn user.
  *
  * @param text - Message body to deliver.
