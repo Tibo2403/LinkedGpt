@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
  * Interface to generate LinkedIn posts with optional images.
@@ -8,7 +8,7 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, publishPost, ApiException } from '../../lib/api';
+import { generateContent, publishPost, ApiException, fetchTrendingHashtags } from '../../lib/api';
 
 
 interface ImagePreview {
@@ -36,6 +36,7 @@ const PostGenerator: React.FC = () => {
   const [platform, setPlatform] = useState('LinkedIn');
   const [tone, setTone] = useState('Professional');
   const [hashtags, setHashtags] = useState('');
+  const [suggestedHashtags, setSuggestedHashtags] = useState<string[]>([]);
 
   const formatHashtags = (tags: string) =>
     tags
@@ -86,6 +87,18 @@ const PostGenerator: React.FC = () => {
     }
   };
 
+  const handleAddHashtag = (tag: string) => {
+    const clean = tag.replace(/^#/, '');
+    setHashtags(prev => {
+      const current = prev
+        .split(',')
+        .map(t => t.trim())
+        .filter(Boolean);
+      if (current.includes(clean)) return prev;
+      return prev ? `${prev}, ${clean}` : clean;
+    });
+  };
+
   const handleRemoveImage = (index: number) => {
     setSelectedImages(prev => {
       const newImages = [...prev];
@@ -104,6 +117,18 @@ const PostGenerator: React.FC = () => {
       return [...newImages];
     });
   };
+
+  useEffect(() => {
+    const loadHashtags = async () => {
+      try {
+        const tags = await fetchTrendingHashtags(platform);
+        setSuggestedHashtags(tags);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    loadHashtags();
+  }, [platform]);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -194,12 +219,31 @@ const PostGenerator: React.FC = () => {
                 <option value="Humorous">Humorous</option>
               </select>
             </div>
-            <Input
-              label="Hashtags"
-              placeholder="e.g. ai, marketing, startup"
-              value={hashtags}
-              onChange={(e) => setHashtags(e.target.value)}
-            />
+            <div>
+              <Input
+                label="Hashtags"
+                placeholder="e.g. ai, marketing, startup"
+                value={hashtags}
+                onChange={(e) => setHashtags(e.target.value)}
+              />
+              {suggestedHashtags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {suggestedHashtags.map(tag => {
+                    const display = tag.startsWith('#') ? tag : `#${tag}`;
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => handleAddHashtag(tag)}
+                        className="px-2 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200"
+                      >
+                        {display}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="mb-6 flex flex-wrap gap-4">

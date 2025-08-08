@@ -17,6 +17,7 @@ describe('MessageGenerator', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (generateContent as unknown as vi.Mock).mockResolvedValue('Generated');
+    vi.spyOn(window, 'alert').mockImplementation(() => {});
     const env = import.meta.env as Record<string, string>;
     env.VITE_LINKEDIN_API_KEY = 'token';
   });

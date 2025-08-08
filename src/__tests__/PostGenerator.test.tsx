@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import PostGenerator from '../components/posts/PostGenerator';
-import { generateContent, publishPost } from '../lib/api';
+import { generateContent, publishPost, fetchTrendingHashtags } from '../lib/api';
 
 vi.mock('../lib/api', async () => {
   const actual = await vi.importActual<typeof import('../lib/api')>('../lib/api');
@@ -10,6 +10,7 @@ vi.mock('../lib/api', async () => {
     generateContent: vi.fn(),
     publishPost: vi.fn(),
     sendLinkedInMessage: vi.fn(),
+    fetchTrendingHashtags: vi.fn(),
   };
 });
 
@@ -17,6 +18,8 @@ describe('PostGenerator', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (generateContent as unknown as vi.Mock).mockResolvedValue('Generated');
+    (fetchTrendingHashtags as unknown as vi.Mock).mockResolvedValue(['ai', 'tech']);
+    vi.spyOn(window, 'alert').mockImplementation(() => {});
     const env = import.meta.env as Record<string, string>;
     env.VITE_LINKEDIN_API_KEY = 'token';
   });
@@ -46,5 +49,15 @@ describe('PostGenerator', () => {
 
     fireEvent.click(screen.getByText(/publish now/i));
     await waitFor(() => expect(publishPost).toHaveBeenCalledWith('Generated', 'LinkedIn', 'token'));
+  });
+
+  it('fetches and suggests hashtags for the selected platform', async () => {
+    render(<PostGenerator />);
+    await waitFor(() => expect(fetchTrendingHashtags).toHaveBeenCalledWith('LinkedIn'));
+    await waitFor(() => screen.getByText('#ai'));
+    fireEvent.click(screen.getByText('#ai'));
+    expect(
+      (screen.getByPlaceholderText(/e.g. ai, marketing, startup/i) as HTMLInputElement).value,
+    ).toContain('ai');
   });
 });

@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 export class ApiException extends Error {
   status?: number;
   code?: string;
@@ -257,5 +259,31 @@ export async function fetchLinkedInEvents(token: string) {
   } catch (err) {
     if (err instanceof ApiException) throw err;
     throw new ApiException('Network error while fetching LinkedIn events');
+  }
+}
+
+/**
+ * Retrieves trending hashtags for a given platform from Supabase.
+ *
+ * @param platform - The social platform to query for trending tags.
+ * @returns An array of hashtag strings without leading '#'.
+ * @throws ApiException When the request fails or a network error occurs.
+ */
+export async function fetchTrendingHashtags(platform: string): Promise<string[]> {
+  try {
+    const { data, error } = await supabase
+      .from('trending_hashtags')
+      .select('tag')
+      .eq('platform', platform)
+      .order('rank', { ascending: true });
+
+    if (error) {
+      throw new ApiException('Failed to fetch trending hashtags', undefined, error.code);
+    }
+
+    return data?.map((row: { tag: string }) => row.tag) ?? [];
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while fetching trending hashtags');
   }
 }
