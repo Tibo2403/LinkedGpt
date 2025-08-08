@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
  * Interface to generate LinkedIn posts with optional images.
@@ -8,9 +8,10 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, publishPost, ApiException, savePost } from '../../lib/api';
-import { useAuthStore } from '../../stores/authStore';
 
+// ✅ Fusion des branches: schedulePost + savePost
+import { generateContent, publishPost, schedulePost, ApiException, savePost } from '../../lib/api';
+import { useAuthStore } from '../../stores/authStore';
 
 interface ImagePreview {
   url: string;
@@ -37,7 +38,9 @@ const PostGenerator: React.FC = () => {
   const [platform, setPlatform] = useState('LinkedIn');
   const [tone, setTone] = useState('Professional');
   const [hashtags, setHashtags] = useState('');
-  const user = useAuthStore((state) => state.user);
+
+  // ✅ style unifié d'accès au user
+  const { user } = useAuthStore();
 
   const formatHashtags = (tags: string) =>
     tags
@@ -46,7 +49,6 @@ const PostGenerator: React.FC = () => {
       .filter(Boolean)
       .map(tag => (tag.startsWith('#') ? tag : `#${tag}`))
       .join(' ');
-  
 
   const handleImageUpload = (files: FileList | null) => {
     if (!files) return;
@@ -55,7 +57,7 @@ const PostGenerator: React.FC = () => {
       url: URL.createObjectURL(file),
       file,
       type: 'upload',
-      selected: false
+      selected: false,
     }));
 
     setSelectedImages(prev => [...prev, ...newImages]);
@@ -64,26 +66,21 @@ const PostGenerator: React.FC = () => {
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
+    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+    else if (e.type === 'dragleave') setDragActive(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleImageUpload(e.dataTransfer.files);
-    }
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) handleImageUpload(e.dataTransfer.files);
   };
 
   const handleUrlAdd = () => {
-    if (imageUrl.trim()) {
-      setSelectedImages(prev => [...prev, { url: imageUrl, type: 'url', selected: false }]);
+    const url = imageUrl.trim();
+    if (url) {
+      setSelectedImages(prev => [...prev, { url, type: 'url', selected: false }]);
       setImageUrl('');
     }
   };
@@ -92,7 +89,7 @@ const PostGenerator: React.FC = () => {
     setSelectedImages(prev => {
       const newImages = [...prev];
       if (newImages[index].type === 'upload' && newImages[index].url) {
-        URL.revokeObjectURL(newImages[index].url);
+        try { URL.revokeObjectURL(newImages[index].url); } catch {}
       }
       newImages.splice(index, 1);
       return newImages;
@@ -103,7 +100,7 @@ const PostGenerator: React.FC = () => {
     setSelectedImages(prev => {
       const newImages = [...prev];
       newImages[index].selected = !newImages[index].selected;
-      return [...newImages];
+      return newImages;
     });
   };
 
@@ -111,63 +108,94 @@ const PostGenerator: React.FC = () => {
     setIsGenerating(true);
     try {
       const tags = formatHashtags(hashtags);
-      const promptWithOptions = `${prompt}${tone ? `\nTone: ${tone}` : ''}${
-        tags ? `\nInclude these hashtags: ${tags}` : ''
-      }`;
+      const promptWithOptions = `${prompt}${tone ? `
+Tone: ${tone}` : ''}${tags ? `
+Include these hashtags: ${tags}` : ''}`;
       const text = await generateContent(promptWithOptions, platform);
       setGeneratedContent(text);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      if (err instanceof ApiException) {
-        alert(err.message);
-      } else {
-        alert('Failed to generate content');
-      }
+      if (err instanceof ApiException) alert(err.message);
+      else alert('Failed to generate content');
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handlePublish = async () => {
+    const tags = formatHashtags(hashtags);
+    const contentToShare = tags ? `${generatedContent}
+
+${tags}` : generatedContent;
+
+    // 🔔 Scheduling
+    if (scheduledDate && scheduledTime) {
+      try {
+        const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString();
+        await schedulePost(user?.id || '', contentToShare, [platform], scheduledAt);
+        // persist en base si dispo
+        if (user) {
+          await savePost({
+            user_id: user.id,
+            content: contentToShare,
+            platform,
+            status: 'scheduled',
+            scheduled_at: scheduledAt,
+          });
+        }
+        alert('Post scheduled successfully!');
+        return;
+      } catch (err: unknown) {
+        console.error(err);
+        if (err instanceof ApiException) alert(err.message);
+        else alert('Failed to schedule post');
+        return;
+      }
+    }
+
+    // 🔐 Token env par plateforme
     const env = import.meta.env as Record<string, string | undefined>;
     const token = env[`VITE_${platform.toUpperCase()}_API_KEY`];
     if (!token) {
       alert(`${platform} API key not configured`);
       return;
     }
+
     try {
-      const tags = formatHashtags(hashtags);
-      const contentToPublish = tags
-        ? `${generatedContent}\n\n${tags}`
-        : generatedContent;
-      await publishPost(contentToPublish, platform, token);
+      await publishPost(contentToShare, platform, token);
       if (user) {
         await savePost({
           user_id: user.id,
-          content: contentToPublish,
+          content: contentToShare,
           platform,
           status: 'published',
         });
       }
       alert('Post published successfully!');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      if (err instanceof ApiException) {
-        alert(err.message);
-      } else {
-        alert('Failed to publish post');
-      }
+      if (err instanceof ApiException) alert(err.message);
+      else alert('Failed to publish post');
     }
   };
+
+  // 🧹 cleanup des ObjectURLs créés
+  useEffect(() => {
+    return () => {
+      selectedImages.forEach(img => {
+        if (img.type === 'upload') {
+          try { URL.revokeObjectURL(img.url); } catch {}
+        }
+      });
+    };
+  }, [selectedImages]);
 
   return (
     <Card title="Create Social Media Post">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2">
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Platform
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Platform</label>
             <select
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
@@ -178,6 +206,7 @@ const PostGenerator: React.FC = () => {
               <option value="Facebook">Facebook</option>
             </select>
           </div>
+
           <div className="mb-4">
             <TextArea
               label="What would you like to post about?"
@@ -190,9 +219,7 @@ const PostGenerator: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tone
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tone</label>
               <select
                 value={tone}
                 onChange={(e) => setTone(e.target.value)}
@@ -232,9 +259,7 @@ const PostGenerator: React.FC = () => {
 
           {generatedContent && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Generated Content
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Generated Content</label>
               <div className="relative">
                 <TextArea
                   rows={8}
@@ -266,21 +291,12 @@ const PostGenerator: React.FC = () => {
                 {selectedImages.map((image, index) => (
                   <div
                     key={index}
-                    className={`relative group cursor-pointer ${
-                      image.selected ? 'ring-2 ring-[#0A66C2] ring-offset-2' : ''
-                    }`}
+                    className={`relative group cursor-pointer ${image.selected ? 'ring-2 ring-[#0A66C2] ring-offset-2' : ''}`}
                     onClick={() => handleImageSelect(index)}
                   >
-                    <img
-                      src={image.url}
-                      alt={`Upload ${index + 1}`}
-                      className="w-full h-24 object-cover rounded-lg"
-                    />
+                    <img src={image.url} alt={`Upload ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveImage(index);
-                      }}
+                      onClick={(e) => { e.stopPropagation(); handleRemoveImage(index); }}
                       className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <X className="h-4 w-4" />
@@ -297,28 +313,16 @@ const PostGenerator: React.FC = () => {
               </div>
             </div>
           )}
-          
+
           {generatedContent && (
             <div className="flex flex-wrap gap-4">
-              <Button
-                variant="primary"
-                icon={<Share2 className="h-4 w-4" />}
-                onClick={handlePublish}
-              >
+              <Button variant="primary" icon={<Share2 className="h-4 w-4" />} onClick={handlePublish}>
                 {showScheduler ? 'Schedule Post' : 'Publish Now'}
               </Button>
-              <Button
-                variant="outline"
-                icon={<Clock className="h-4 w-4" />}
-                onClick={() => setShowScheduler(!showScheduler)}
-              >
+              <Button variant="outline" icon={<Clock className="h-4 w-4" />} onClick={() => setShowScheduler(!showScheduler)}>
                 {showScheduler ? 'Publish Immediately' : 'Schedule for Later'}
               </Button>
-              <Button
-                variant="outline"
-                icon={<Image className="h-4 w-4" />}
-                onClick={() => setShowImageModal(true)}
-              >
+              <Button variant="outline" icon={<Image className="h-4 w-4" />} onClick={() => setShowImageModal(true)}>
                 Add Media
               </Button>
             </div>
@@ -329,19 +333,14 @@ const PostGenerator: React.FC = () => {
               <div className="bg-white rounded-lg max-w-lg w-full p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">Add Images</h3>
-                  <button
-                    onClick={() => setShowImageModal(false)}
-                    className="text-gray-400 hover:text-gray-500"
-                  >
+                  <button onClick={() => setShowImageModal(false)} className="text-gray-400 hover:text-gray-500">
                     <X className="h-5 w-5" />
                   </button>
                 </div>
 
                 <div className="space-y-4">
                   <div
-                    className={`border-2 border-dashed rounded-lg p-6 text-center ${
-                      dragActive ? 'border-[#0A66C2] bg-blue-50' : 'border-gray-300'
-                    }`}
+                    className={`border-2 border-dashed rounded-lg p-6 text-center ${dragActive ? 'border-[#0A66C2] bg-blue-50' : 'border-gray-300'}`}
                     onDragEnter={handleDrag}
                     onDragLeave={handleDrag}
                     onDragOver={handleDrag}
@@ -362,9 +361,7 @@ const PostGenerator: React.FC = () => {
                           />
                         </label>
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Supports: JPG, PNG, GIF (max 5MB)
-                      </p>
+                      <p className="text-xs text-gray-400 mt-1">Supports: JPG, PNG, GIF (max 5MB)</p>
                     </div>
                   </div>
 
@@ -375,7 +372,7 @@ const PostGenerator: React.FC = () => {
                       value={imageUrl}
                       onChange={(e) => setImageUrl(e.target.value)}
                       className="flex-1 rounded-md border border-gray-300 shadow-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A66C2] focus:border-[#0A66C2]"
-                      onKeyPress={(e) => {
+                      onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           handleUrlAdd();
@@ -387,37 +384,24 @@ const PostGenerator: React.FC = () => {
 
                   {selectedImages.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">
-                        Selected Images ({selectedImages.length})
-                      </h4>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Images ({selectedImages.length})</h4>
                       <div className="grid grid-cols-3 gap-4">
                         {selectedImages.map((image, index) => (
                           <div
                             key={index}
-                            className={`relative group cursor-pointer ${
-                              image.selected ? 'ring-2 ring-[#0A66C2] ring-offset-2' : ''
-                            }`}
+                            className={`relative group cursor-pointer ${image.selected ? 'ring-2 ring-[#0A66C2] ring-offset-2' : ''}`}
                             onClick={() => handleImageSelect(index)}
                           >
-                            <img
-                              src={image.url}
-                              alt={`Upload ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg"
-                            />
+                            <img src={image.url} alt={`Upload ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveImage(index);
-                              }}
+                              onClick={(e) => { e.stopPropagation(); handleRemoveImage(index); }}
                               className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <X className="h-4 w-4" />
                             </button>
                             {image.selected && (
                               <div className="absolute inset-0 bg-[#0A66C2] bg-opacity-10 rounded-lg flex items-center justify-center">
-                                <div className="bg-[#0A66C2] text-white rounded-full p-1">
-                                  <Check className="h-4 w-4" />
-                                </div>
+                                <div className="bg-[#0A66C2] text-white rounded-full p-1"><Check className="h-4 w-4" /></div>
                               </div>
                             )}
                           </div>
@@ -427,15 +411,8 @@ const PostGenerator: React.FC = () => {
                   )}
 
                   <div className="flex justify-end space-x-3 pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowImageModal(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button onClick={() => setShowImageModal(false)}>
-                      Done
-                    </Button>
+                    <Button variant="outline" onClick={() => setShowImageModal(false)}>Cancel</Button>
+                    <Button onClick={() => setShowImageModal(false)}>Done</Button>
                   </div>
                 </div>
               </div>
