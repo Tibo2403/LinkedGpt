@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
  * Interface to generate LinkedIn posts with optional images.
@@ -8,9 +8,10 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, publishPost, schedulePost, ApiException } from '../../lib/api';
-import { useAuthStore } from '../../stores/authStore';
 
+// ✅ Fusion des branches: on garde schedulePost + useAuthStore ET generateImage
+import { generateContent, publishPost, schedulePost, ApiException, generateImage } from '../../lib/api';
+import { useAuthStore } from '../../stores/authStore';
 
 interface ImagePreview {
   url: string;
@@ -37,6 +38,8 @@ const PostGenerator: React.FC = () => {
   const [platform, setPlatform] = useState('LinkedIn');
   const [tone, setTone] = useState('Professional');
   const [hashtags, setHashtags] = useState('');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+
   const { user } = useAuthStore();
 
   const formatHashtags = (tags: string) =>
@@ -46,7 +49,6 @@ const PostGenerator: React.FC = () => {
       .filter(Boolean)
       .map(tag => (tag.startsWith('#') ? tag : `#${tag}`))
       .join(' ');
-  
 
   const handleImageUpload = (files: FileList | null) => {
     if (!files) return;
@@ -83,7 +85,7 @@ const PostGenerator: React.FC = () => {
 
   const handleUrlAdd = () => {
     if (imageUrl.trim()) {
-      setSelectedImages(prev => [...prev, { url: imageUrl, type: 'url', selected: false }]);
+      setSelectedImages(prev => [...prev, { url: imageUrl.trim(), type: 'url', selected: false }]);
       setImageUrl('');
     }
   };
@@ -103,8 +105,29 @@ const PostGenerator: React.FC = () => {
     setSelectedImages(prev => {
       const newImages = [...prev];
       newImages[index].selected = !newImages[index].selected;
-      return [...newImages];
+      return newImages;
     });
+  };
+
+  const handleGenerateImage = async () => {
+    if (!prompt.trim()) {
+      alert('Please enter a prompt before generating an image');
+      return;
+    }
+    setIsGeneratingImage(true);
+    try {
+      const url = await generateImage(prompt);
+      setSelectedImages(prev => [...prev, { url, type: 'url', selected: false }]);
+    } catch (err: unknown) {
+      console.error(err);
+      if (err instanceof ApiException) {
+        alert(err.message);
+      } else {
+        alert('Failed to generate image');
+      }
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
   const handleGenerate = async () => {
@@ -116,7 +139,7 @@ const PostGenerator: React.FC = () => {
       }`;
       const text = await generateContent(promptWithOptions, platform);
       setGeneratedContent(text);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
       if (err instanceof ApiException) {
         alert(err.message);
@@ -137,15 +160,16 @@ const PostGenerator: React.FC = () => {
         const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString();
         await schedulePost(user?.id || '', contentToShare, [platform], scheduledAt);
         alert('Post scheduled successfully!');
-      } catch (err) {
+        return;
+      } catch (err: unknown) {
         console.error(err);
         if (err instanceof ApiException) {
           alert(err.message);
         } else {
           alert('Failed to schedule post');
         }
+        return;
       }
-      return;
     }
 
     const env = import.meta.env as Record<string, string | undefined>;
@@ -158,7 +182,7 @@ const PostGenerator: React.FC = () => {
     try {
       await publishPost(contentToShare, platform, token);
       alert('Post published successfully!');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
       if (err instanceof ApiException) {
         alert(err.message);
@@ -167,6 +191,17 @@ const PostGenerator: React.FC = () => {
       }
     }
   };
+
+  // Nettoyage des ObjectURLs créés
+  useEffect(() => {
+    return () => {
+      selectedImages.forEach(img => {
+        if (img.type === 'upload') {
+          try { URL.revokeObjectURL(img.url); } catch {}
+        }
+      });
+    };
+  }, [selectedImages]);
 
   return (
     <Card title="Create Social Media Post">
@@ -305,7 +340,7 @@ const PostGenerator: React.FC = () => {
               </div>
             </div>
           )}
-          
+
           {generatedContent && (
             <div className="flex flex-wrap gap-4">
               <Button
@@ -383,7 +418,7 @@ const PostGenerator: React.FC = () => {
                       value={imageUrl}
                       onChange={(e) => setImageUrl(e.target.value)}
                       className="flex-1 rounded-md border border-gray-300 shadow-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A66C2] focus:border-[#0A66C2]"
-                      onKeyPress={(e) => {
+                      onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           handleUrlAdd();
@@ -435,6 +470,13 @@ const PostGenerator: React.FC = () => {
                   )}
 
                   <div className="flex justify-end space-x-3 pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={handleGenerateImage}
+                      isLoading={isGeneratingImage}
+                    >
+                      Generate Image
+                    </Button>
                     <Button
                       variant="outline"
                       onClick={() => setShowImageModal(false)}
