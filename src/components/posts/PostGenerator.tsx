@@ -131,11 +131,17 @@ const PostGenerator: React.FC = () => {
   const handlePublish = async () => {
     const tags = formatHashtags(hashtags);
     const contentToShare = tags ? `${generatedContent}\n\n${tags}` : generatedContent;
+    const selectedPlatforms = platform ? [platform] : [];
+
+    if (selectedPlatforms.length === 0) {
+      alert('Please select at least one platform to publish.');
+      return;
+    }
 
     if (scheduledDate && scheduledTime) {
       try {
         const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString();
-        await schedulePost(user?.id || '', contentToShare, [platform], scheduledAt);
+        await schedulePost(user?.id || '', contentToShare, selectedPlatforms, scheduledAt);
         alert('Post scheduled successfully!');
       } catch (err) {
         console.error(err);
@@ -149,14 +155,25 @@ const PostGenerator: React.FC = () => {
     }
 
     const env = import.meta.env as Record<string, string | undefined>;
-    const token = env[`VITE_${platform.toUpperCase()}_API_KEY`];
-    if (!token) {
-      alert(`${platform} API key not configured`);
-      return;
+    const tokenMap = selectedPlatforms.reduce<Record<string, string>>((acc, p) => {
+      const token = env[`VITE_${p.toUpperCase()}_API_KEY`];
+      if (token) {
+        acc[p] = token;
+      }
+      return acc;
+    }, {});
+
+    for (const p of selectedPlatforms) {
+      if (!tokenMap[p]) {
+        alert(`${p} API key not configured`);
+        return;
+      }
     }
 
     try {
-      await publishPost(contentToShare, platform, token);
+      for (const p of selectedPlatforms) {
+        await publishPost(contentToShare, p, tokenMap[p]);
+      }
       alert('Post published successfully!');
     } catch (err) {
       console.error(err);
