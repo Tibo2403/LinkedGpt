@@ -34,7 +34,7 @@ const PostGenerator: React.FC = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [selectedImages, setSelectedImages] = useState<ImagePreview[]>([]);
   const [dragActive, setDragActive] = useState(false);
-  const [platform, setPlatform] = useState('LinkedIn');
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [tone, setTone] = useState('Professional');
   const [hashtags, setHashtags] = useState('');
   const { user } = useAuthStore();
@@ -108,6 +108,12 @@ const PostGenerator: React.FC = () => {
   };
 
   const handleGenerate = async () => {
+    if (selectedPlatforms.length === 0) {
+      alert('Please select at least one platform');
+      return;
+    }
+
+    const platform = selectedPlatforms[0];
     setIsGenerating(true);
     try {
       const tags = formatHashtags(hashtags);
@@ -129,6 +135,12 @@ const PostGenerator: React.FC = () => {
   };
 
   const handlePublish = async () => {
+    if (selectedPlatforms.length === 0) {
+      alert('Please select a platform');
+      return;
+    }
+
+    const platform = selectedPlatforms[0];
     const tags = formatHashtags(hashtags);
     const contentToShare = tags ? `${generatedContent}\n\n${tags}` : generatedContent;
 
@@ -173,14 +185,21 @@ const PostGenerator: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2">
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="platform"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Platform
             </label>
             <select
-              value={platform}
-              onChange={(e) => setPlatform(e.target.value)}
+              id="platform"
+              value={selectedPlatforms[0] || ''}
+              onChange={(e) =>
+                setSelectedPlatforms(e.target.value ? [e.target.value] : [])
+              }
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0A66C2] focus:ring-[#0A66C2]"
             >
+              <option value="">Select a platform</option>
               <option value="LinkedIn">LinkedIn</option>
               <option value="Twitter">Twitter</option>
               <option value="Facebook">Facebook</option>

@@ -27,6 +27,9 @@ describe('PostGenerator', () => {
 
   it('calls generateContent when generate button is clicked', async () => {
     render(<PostGenerator />);
+    fireEvent.change(screen.getByLabelText(/Platform/i), {
+      target: { value: 'LinkedIn' },
+    });
     fireEvent.change(
       screen.getByPlaceholderText(/Enter a topic or detailed instructions for GPT.../i),
       { target: { value: 'Topic' } },
@@ -37,6 +40,9 @@ describe('PostGenerator', () => {
 
   it('publishes generated content when publish button is clicked', async () => {
     render(<PostGenerator />);
+    fireEvent.change(screen.getByLabelText(/Platform/i), {
+      target: { value: 'LinkedIn' },
+    });
     fireEvent.change(
       screen.getByPlaceholderText(/Enter a topic or detailed instructions for GPT.../i),
       { target: { value: 'Topic' } },
@@ -45,6 +51,8 @@ describe('PostGenerator', () => {
     await waitFor(() => expect(generateContent).toHaveBeenCalled());
 
     fireEvent.click(screen.getByText(/publish now/i));
-    await waitFor(() => expect(publishPost).toHaveBeenCalledWith('Generated', 'LinkedIn', 'token'));
+    await waitFor(() =>
+      expect(publishPost).toHaveBeenCalledWith('Generated', 'LinkedIn', 'token'),
+    );
   });
 });
