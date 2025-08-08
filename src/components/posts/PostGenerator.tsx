@@ -8,7 +8,7 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, publishPost, ApiException } from '../../lib/api';
+import { generateContent, publishPosts, ApiException } from '../../lib/api';
 
 
 interface ImagePreview {
@@ -33,7 +33,7 @@ const PostGenerator: React.FC = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [selectedImages, setSelectedImages] = useState<ImagePreview[]>([]);
   const [dragActive, setDragActive] = useState(false);
-  const [platform, setPlatform] = useState('LinkedIn');
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['LinkedIn']);
   const [tone, setTone] = useState('Professional');
   const [hashtags, setHashtags] = useState('');
 
@@ -112,7 +112,8 @@ const PostGenerator: React.FC = () => {
       const promptWithOptions = `${prompt}${tone ? `\nTone: ${tone}` : ''}${
         tags ? `\nInclude these hashtags: ${tags}` : ''
       }`;
-      const text = await generateContent(promptWithOptions, platform);
+      const primaryPlatform = selectedPlatforms[0] || 'LinkedIn';
+      const text = await generateContent(promptWithOptions, primaryPlatform);
       setGeneratedContent(text);
     } catch (err) {
       console.error(err);
@@ -128,17 +129,21 @@ const PostGenerator: React.FC = () => {
 
   const handlePublish = async () => {
     const env = import.meta.env as Record<string, string | undefined>;
-    const token = env[`VITE_${platform.toUpperCase()}_API_KEY`];
-    if (!token) {
-      alert(`${platform} API key not configured`);
-      return;
+    const tokenMap: Record<string, string> = {};
+    for (const platform of selectedPlatforms) {
+      const token = env[`VITE_${platform.toUpperCase()}_API_KEY`];
+      if (!token) {
+        alert(`${platform} API key not configured`);
+        return;
+      }
+      tokenMap[platform] = token;
     }
     try {
       const tags = formatHashtags(hashtags);
       const contentToPublish = tags
         ? `${generatedContent}\n\n${tags}`
         : generatedContent;
-      await publishPost(contentToPublish, platform, token);
+      await publishPosts(contentToPublish, selectedPlatforms, tokenMap);
       alert('Post published successfully!');
     } catch (err) {
       console.error(err);
@@ -156,17 +161,27 @@ const PostGenerator: React.FC = () => {
         <div className="md:col-span-2">
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Platform
+              Platforms
             </label>
-            <select
-              value={platform}
-              onChange={(e) => setPlatform(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0A66C2] focus:ring-[#0A66C2]"
-            >
-              <option value="LinkedIn">LinkedIn</option>
-              <option value="Twitter">Twitter</option>
-              <option value="Facebook">Facebook</option>
-            </select>
+            <div className="mt-2 flex flex-col gap-2">
+              {['LinkedIn', 'Twitter', 'Facebook'].map(p => (
+                <label key={p} className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-[#0A66C2] focus:ring-[#0A66C2]"
+                    checked={selectedPlatforms.includes(p)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedPlatforms([...selectedPlatforms, p]);
+                      } else {
+                        setSelectedPlatforms(selectedPlatforms.filter(sp => sp !== p));
+                      }
+                    }}
+                  />
+                  <span className="ml-2">{p}</span>
+                </label>
+              ))}
+            </div>
           </div>
           <div className="mb-4">
             <TextArea
