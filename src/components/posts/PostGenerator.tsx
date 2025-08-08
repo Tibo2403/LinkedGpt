@@ -8,7 +8,7 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, publishPost, ApiException } from '../../lib/api';
+import { generateContent, publishPost, ApiException, generateImage } from '../../lib/api';
 
 
 interface ImagePreview {
@@ -36,6 +36,7 @@ const PostGenerator: React.FC = () => {
   const [platform, setPlatform] = useState('LinkedIn');
   const [tone, setTone] = useState('Professional');
   const [hashtags, setHashtags] = useState('');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const formatHashtags = (tags: string) =>
     tags
@@ -103,6 +104,27 @@ const PostGenerator: React.FC = () => {
       newImages[index].selected = !newImages[index].selected;
       return [...newImages];
     });
+  };
+
+  const handleGenerateImage = async () => {
+    if (!prompt.trim()) {
+      alert('Please enter a prompt before generating an image');
+      return;
+    }
+    setIsGeneratingImage(true);
+    try {
+      const url = await generateImage(prompt);
+      setSelectedImages(prev => [...prev, { url, type: 'url', selected: false }]);
+    } catch (err) {
+      console.error(err);
+      if (err instanceof ApiException) {
+        alert(err.message);
+      } else {
+        alert('Failed to generate image');
+      }
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
   const handleGenerate = async () => {
@@ -417,6 +439,13 @@ const PostGenerator: React.FC = () => {
                   )}
 
                   <div className="flex justify-end space-x-3 pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={handleGenerateImage}
+                      isLoading={isGeneratingImage}
+                    >
+                      Generate Image
+                    </Button>
                     <Button
                       variant="outline"
                       onClick={() => setShowImageModal(false)}

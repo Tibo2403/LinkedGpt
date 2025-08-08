@@ -55,6 +55,46 @@ export async function generateContent(prompt: string, platform: string): Promise
 }
 
 /**
+ * Generates an image using the OpenAI Images API.
+ *
+ * Limits the image size to 512x512 and only accepts common web formats.
+ *
+ * @param prompt - Description of the desired image.
+ * @returns The URL of the generated image.
+ * @throws ApiException When the API key is missing, the request fails, or an unsupported format is returned.
+ */
+export async function generateImage(prompt: string): Promise<string> {
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  if (!apiKey) throw new ApiException('OpenAI API key not configured');
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        prompt,
+        n: 1,
+        size: '512x512',
+        response_format: 'url',
+      }),
+    });
+    if (!response.ok) throw new ApiException('Failed to generate image', response.status);
+    const data = await response.json();
+    const imageUrl: string = data.data[0].url;
+    if (!/\.(png|jpg|jpeg|gif)$/i.test(new URL(imageUrl).pathname)) {
+      throw new ApiException('Unsupported image format returned');
+    }
+    return imageUrl;
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while generating image');
+  }
+}
+
+/**
  * Publishes a post to LinkedIn using the REST API.
  *
  * @param text - The body of the LinkedIn post.
