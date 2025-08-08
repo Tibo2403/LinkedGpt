@@ -164,6 +164,27 @@ export async function publishPost(
 }
 
 /**
+ * Publishes a post to multiple platforms.
+ *
+ * @param text - Content to publish.
+ * @param platforms - List of target platforms.
+ * @param tokenMap - Mapping of platform names to access tokens.
+ */
+export async function publishPosts(
+  text: string,
+  platforms: string[],
+  tokenMap: Record<string, string>,
+) {
+  for (const platform of platforms) {
+    const token = tokenMap[platform];
+    if (!token) {
+      throw new ApiException(`${platform} API key not configured`);
+    }
+    await publishPost(text, platform, token);
+  }
+}
+
+/**
  * Sends a direct message to a LinkedIn user.
  *
  * @param text - Message body to deliver.
