@@ -8,7 +8,8 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, publishPost, ApiException } from '../../lib/api';
+import { generateContent, publishPost, schedulePost, ApiException } from '../../lib/api';
+import { useAuthStore } from '../../stores/authStore';
 
 
 interface ImagePreview {
@@ -36,6 +37,7 @@ const PostGenerator: React.FC = () => {
   const [platform, setPlatform] = useState('LinkedIn');
   const [tone, setTone] = useState('Professional');
   const [hashtags, setHashtags] = useState('');
+  const { user } = useAuthStore();
 
   const formatHashtags = (tags: string) =>
     tags
@@ -127,18 +129,34 @@ const PostGenerator: React.FC = () => {
   };
 
   const handlePublish = async () => {
+    const tags = formatHashtags(hashtags);
+    const contentToShare = tags ? `${generatedContent}\n\n${tags}` : generatedContent;
+
+    if (scheduledDate && scheduledTime) {
+      try {
+        const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString();
+        await schedulePost(user?.id || '', contentToShare, [platform], scheduledAt);
+        alert('Post scheduled successfully!');
+      } catch (err) {
+        console.error(err);
+        if (err instanceof ApiException) {
+          alert(err.message);
+        } else {
+          alert('Failed to schedule post');
+        }
+      }
+      return;
+    }
+
     const env = import.meta.env as Record<string, string | undefined>;
     const token = env[`VITE_${platform.toUpperCase()}_API_KEY`];
     if (!token) {
       alert(`${platform} API key not configured`);
       return;
     }
+
     try {
-      const tags = formatHashtags(hashtags);
-      const contentToPublish = tags
-        ? `${generatedContent}\n\n${tags}`
-        : generatedContent;
-      await publishPost(contentToPublish, platform, token);
+      await publishPost(contentToShare, platform, token);
       alert('Post published successfully!');
     } catch (err) {
       console.error(err);
