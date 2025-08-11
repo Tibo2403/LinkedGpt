@@ -143,9 +143,9 @@ const PostGenerator: React.FC = () => {
     const platform = selectedPlatforms[0];
     const tags = formatHashtags(hashtags);
     const contentToShare = tags ? `${generatedContent}\n\n${tags}` : generatedContent;
-    const selectedPlatforms = platform ? [platform] : [];
+    const platformsToPublish = platform ? [platform] : [];
 
-    if (selectedPlatforms.length === 0) {
+    if (platformsToPublish.length === 0) {
       alert('Please select at least one platform to publish.');
       return;
     }
@@ -153,7 +153,7 @@ const PostGenerator: React.FC = () => {
     if (scheduledDate && scheduledTime) {
       try {
         const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString();
-        await schedulePost(user?.id || '', contentToShare, selectedPlatforms, scheduledAt);
+        await schedulePost(user?.id || '', contentToShare, platformsToPublish, scheduledAt);
         alert('Post scheduled successfully!');
       } catch (err) {
         console.error(err);
@@ -167,7 +167,7 @@ const PostGenerator: React.FC = () => {
     }
 
     const env = import.meta.env as Record<string, string | undefined>;
-    const tokenMap = selectedPlatforms.reduce<Record<string, string>>((acc, p) => {
+    const tokenMap = platformsToPublish.reduce<Record<string, string>>((acc, p) => {
       const token = env[`VITE_${p.toUpperCase()}_API_KEY`];
       if (token) {
         acc[p] = token;
@@ -175,7 +175,7 @@ const PostGenerator: React.FC = () => {
       return acc;
     }, {});
 
-    for (const p of selectedPlatforms) {
+    for (const p of platformsToPublish) {
       if (!tokenMap[p]) {
         alert(`${p} API key not configured`);
         return;
@@ -183,7 +183,7 @@ const PostGenerator: React.FC = () => {
     }
 
     try {
-      for (const p of selectedPlatforms) {
+      for (const p of platformsToPublish) {
         await publishPost(contentToShare, p, tokenMap[p]);
       }
       alert('Post published successfully!');
