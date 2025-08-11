@@ -8,7 +8,14 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, publishPost, schedulePost, ApiException } from '../../lib/api';
+import {
+  generateContent,
+  publishPost,
+  schedulePost,
+  ApiException,
+  translateContent,
+  rewriteContent,
+} from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
 
 
@@ -38,6 +45,14 @@ const PostGenerator: React.FC = () => {
   const [tone, setTone] = useState('Professional');
   const [hashtags, setHashtags] = useState('');
   const { user } = useAuthStore();
+
+  const MAX_CALLS_PER_MINUTE = 5;
+  const [apiCallCount, setApiCallCount] = useState(0);
+  const [apiResetTime, setApiResetTime] = useState(Date.now());
+  const [showTransformModal, setShowTransformModal] = useState(false);
+  const [transformMode, setTransformMode] = useState<'translate' | 'rewrite'>('translate');
+  const [transformValue, setTransformValue] = useState('');
+  const [isTransforming, setIsTransforming] = useState(false);
 
   const formatHashtags = (tags: string) =>
     tags
@@ -134,6 +149,46 @@ const PostGenerator: React.FC = () => {
     }
   };
 
+  const handleTransform = async () => {
+    if (!generatedContent.trim()) {
+      alert('No content to process');
+      return;
+    }
+
+    const now = Date.now();
+    if (now - apiResetTime > 60000) {
+      setApiResetTime(now);
+      setApiCallCount(0);
+    }
+
+    if (apiCallCount >= MAX_CALLS_PER_MINUTE) {
+      alert('Rate limit exceeded. Please wait.');
+      return;
+    }
+
+    setIsTransforming(true);
+    try {
+      let result = '';
+      if (transformMode === 'translate') {
+        result = await translateContent(generatedContent, transformValue);
+      } else {
+        result = await rewriteContent(generatedContent, transformValue);
+      }
+      setGeneratedContent(result);
+      setApiCallCount(c => c + 1);
+      setShowTransformModal(false);
+    } catch (err) {
+      console.error(err);
+      if (err instanceof ApiException) {
+        alert(err.message);
+      } else {
+        alert('Failed to process content');
+      }
+    } finally {
+      setIsTransforming(false);
+    }
+  };
+
   const handlePublish = async () => {
     if (selectedPlatforms.length === 0) {
       alert('Please select a platform');
@@ -143,9 +198,9 @@ const PostGenerator: React.FC = () => {
     const platform = selectedPlatforms[0];
     const tags = formatHashtags(hashtags);
     const contentToShare = tags ? `${generatedContent}\n\n${tags}` : generatedContent;
-    const selectedPlatforms = platform ? [platform] : [];
+    const platformsToPublish = platform ? [platform] : [];
 
-    if (selectedPlatforms.length === 0) {
+    if (platformsToPublish.length === 0) {
       alert('Please select at least one platform to publish.');
       return;
     }
@@ -153,7 +208,7 @@ const PostGenerator: React.FC = () => {
     if (scheduledDate && scheduledTime) {
       try {
         const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString();
-        await schedulePost(user?.id || '', contentToShare, selectedPlatforms, scheduledAt);
+        await schedulePost(user?.id || '', contentToShare, platformsToPublish, scheduledAt);
         alert('Post scheduled successfully!');
       } catch (err) {
         console.error(err);
@@ -167,7 +222,7 @@ const PostGenerator: React.FC = () => {
     }
 
     const env = import.meta.env as Record<string, string | undefined>;
-    const tokenMap = selectedPlatforms.reduce<Record<string, string>>((acc, p) => {
+    const tokenMap = platformsToPublish.reduce<Record<string, string>>((acc, p) => {
       const token = env[`VITE_${p.toUpperCase()}_API_KEY`];
       if (token) {
         acc[p] = token;
@@ -175,7 +230,7 @@ const PostGenerator: React.FC = () => {
       return acc;
     }, {});
 
-    for (const p of selectedPlatforms) {
+    for (const p of platformsToPublish) {
       if (!tokenMap[p]) {
         alert(`${p} API key not configured`);
         return;
@@ -297,6 +352,11 @@ const PostGenerator: React.FC = () => {
                     <Sparkles className="h-4 w-4 text-[#0A66C2]" />
                   </Button>
                 </div>
+              </div>
+              <div className="flex justify-end mt-2">
+                <Button variant="outline" onClick={() => setShowTransformModal(true)}>
+                  Traduire/Reformuler
+                </Button>
               </div>
             </div>
           )}
@@ -481,6 +541,55 @@ const PostGenerator: React.FC = () => {
                       Done
                     </Button>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showTransformModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-lg max-w-md w-full p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium">Traduire/Reformuler</h3>
+                  <button
+                    onClick={() => setShowTransformModal(false)}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Action
+                    </label>
+                    <select
+                      value={transformMode}
+                      onChange={(e) => setTransformMode(e.target.value as 'translate' | 'rewrite')}
+                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#0A66C2] focus:ring-[#0A66C2]"
+                    >
+                      <option value="translate">Traduire</option>
+                      <option value="rewrite">Reformuler</option>
+                    </select>
+                  </div>
+                  <Input
+                    label={transformMode === 'translate' ? 'Langue cible' : 'Ton souhaité'}
+                    value={transformValue}
+                    onChange={(e) => setTransformValue(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowTransformModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button onClick={handleTransform} isLoading={isTransforming}>
+                    Apply
+                  </Button>
                 </div>
               </div>
             </div>
