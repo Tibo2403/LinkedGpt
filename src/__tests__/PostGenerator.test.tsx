@@ -10,6 +10,8 @@ vi.mock('../lib/api', async () => {
     generateContent: vi.fn(),
     publishPost: vi.fn(),
     sendLinkedInMessage: vi.fn(),
+    translateContent: vi.fn(),
+    rewriteContent: vi.fn(),
   };
 });
 

@@ -55,6 +55,78 @@ export async function generateContent(prompt: string, platform: string): Promise
 }
 
 /**
+ * Translates text into the target language using the OpenAI Chat Completion API.
+ *
+ * @param text - The source text to translate.
+ * @param targetLang - Language to translate the text into.
+ * @returns The translated text.
+ * @throws ApiException When the API key is missing or the request fails.
+ */
+export async function translateContent(text: string, targetLang: string): Promise<string> {
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  if (!apiKey) throw new ApiException('OpenAI API key not configured');
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: `You are a translation assistant that translates text to ${targetLang}.` },
+          { role: 'user', content: text },
+        ],
+      }),
+    });
+    if (!response.ok) throw new ApiException('Failed to translate content', response.status);
+    const data = await response.json();
+    return data.choices[0].message.content.trim();
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while translating content');
+  }
+}
+
+/**
+ * Rewrites text in a specified tone using the OpenAI Chat Completion API.
+ *
+ * @param text - The original text to rewrite.
+ * @param tone - Desired tone for the rewritten text.
+ * @returns The rewritten text.
+ * @throws ApiException When the API key is missing or the request fails.
+ */
+export async function rewriteContent(text: string, tone: string): Promise<string> {
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  if (!apiKey) throw new ApiException('OpenAI API key not configured');
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: `You rewrite the user's text in a ${tone} tone.` },
+          { role: 'user', content: text },
+        ],
+      }),
+    });
+    if (!response.ok) throw new ApiException('Failed to rewrite content', response.status);
+    const data = await response.json();
+    return data.choices[0].message.content.trim();
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while rewriting content');
+  }
+}
+
+/**
  * Publishes a post to LinkedIn using the REST API.
  *
  * @param text - The body of the LinkedIn post.
