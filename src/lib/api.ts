@@ -1,3 +1,5 @@
+import type { PostMetrics } from '../types';
+
 export class ApiException extends Error {
   status?: number;
   code?: string;
@@ -133,7 +135,7 @@ export async function rewriteContent(text: string, tone: string): Promise<string
  * @param accessToken - OAuth token granting publish permissions.
  * @throws ApiException When the request fails or a network error occurs.
  */
-export async function sendLinkedInPost(text: string, accessToken: string) {
+export async function sendLinkedInPost(text: string, accessToken: string): Promise<string> {
   try {
     const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
       method: 'POST',
@@ -155,6 +157,8 @@ export async function sendLinkedInPost(text: string, accessToken: string) {
       }),
     });
     if (!response.ok) throw new ApiException('Failed to publish post', response.status);
+    const data = await response.json();
+    return data.id as string;
   } catch (err) {
     if (err instanceof ApiException) throw err;
     throw new ApiException('Network error while publishing post');
@@ -168,7 +172,7 @@ export async function sendLinkedInPost(text: string, accessToken: string) {
  * @param accessToken - OAuth token granting publish permissions.
  * @throws ApiException When the request fails or a network error occurs.
  */
-export async function sendTwitterPost(text: string, accessToken: string) {
+export async function sendTwitterPost(text: string, accessToken: string): Promise<string> {
   try {
     const response = await fetch('https://api.twitter.com/2/tweets', {
       method: 'POST',
@@ -179,6 +183,8 @@ export async function sendTwitterPost(text: string, accessToken: string) {
       body: JSON.stringify({ text }),
     });
     if (!response.ok) throw new ApiException('Failed to publish post', response.status);
+    const data = await response.json();
+    return data.data?.id as string;
   } catch (err) {
     if (err instanceof ApiException) throw err;
     throw new ApiException('Network error while publishing post');
@@ -192,7 +198,7 @@ export async function sendTwitterPost(text: string, accessToken: string) {
  * @param accessToken - OAuth token granting publish permissions.
  * @throws ApiException When the request fails or a network error occurs.
  */
-export async function sendFacebookPost(text: string, accessToken: string) {
+export async function sendFacebookPost(text: string, accessToken: string): Promise<string> {
   try {
     const response = await fetch(
       `https://graph.facebook.com/v18.0/me/feed?access_token=${accessToken}`,
@@ -205,6 +211,8 @@ export async function sendFacebookPost(text: string, accessToken: string) {
       },
     );
     if (!response.ok) throw new ApiException('Failed to publish post', response.status);
+    const data = await response.json();
+    return data.id as string;
   } catch (err) {
     if (err instanceof ApiException) throw err;
     throw new ApiException('Network error while publishing post');
@@ -223,15 +231,47 @@ export async function publishPost(
   platform: string,
   accessToken: string,
 ) {
+  let postId: string;
   switch (platform) {
     case 'LinkedIn':
-      return sendLinkedInPost(text, accessToken);
+      postId = await sendLinkedInPost(text, accessToken);
+      break;
     case 'Twitter':
-      return sendTwitterPost(text, accessToken);
+      postId = await sendTwitterPost(text, accessToken);
+      break;
     case 'Facebook':
-      return sendFacebookPost(text, accessToken);
+      postId = await sendFacebookPost(text, accessToken);
+      break;
     default:
       throw new ApiException('Unsupported platform');
+  }
+  await savePostReference(postId, platform);
+  return postId;
+}
+
+async function savePostReference(postId: string, platform: string) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) return;
+  try {
+    await fetch(`${supabaseUrl}/rest/v1/post_metrics`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({
+        post_id: postId,
+        platform,
+        views: 0,
+        likes: 0,
+        comments: 0,
+        shares: 0,
+      }),
+    });
+  } catch {
+    // Ignore errors saving references
   }
 }
 
@@ -273,10 +313,42 @@ export async function schedulePost(
       }),
     });
     if (!response.ok) throw new ApiException('Failed to schedule post', response.status);
-    return response.json();
+    const data = await response.json();
+    for (const platform of platforms) {
+      await savePostReference(data.id, platform);
+    }
+    return data;
   } catch (err) {
     if (err instanceof ApiException) throw err;
     throw new ApiException('Network error while scheduling post');
+  }
+}
+
+export async function fetchPostMetrics(postIds: string[]): Promise<PostMetrics[]> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new ApiException('Supabase not configured');
+  }
+
+  try {
+    const filter = postIds.map((id) => `"${id}"`).join(',');
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/post_metrics?post_id=in.(${filter})`,
+      {
+        headers: {
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${supabaseAnonKey}`,
+        },
+      },
+    );
+    if (!response.ok) {
+      throw new ApiException('Failed to fetch post metrics', response.status);
+    }
+    return response.json();
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while fetching post metrics');
   }
 }
 

@@ -238,7 +238,7 @@ const PostGenerator: React.FC = () => {
     }
 
     try {
-      for (const p of selectedPlatforms) {
+      for (const p of platformsToPublish) {
         await publishPost(contentToShare, p, tokenMap[p]);
       }
       alert('Post published successfully!');

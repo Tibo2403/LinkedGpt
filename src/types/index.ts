@@ -52,3 +52,12 @@ export interface ApiError {
   code?: string;
   status?: number;
 }
+
+export interface PostMetrics {
+  postId: string;
+  platform: string;
+  views: number;
+  likes: number;
+  comments: number;
+  shares: number;
+}
