@@ -10,6 +10,12 @@ export class ApiException extends Error {
   }
 }
 
+export interface Template {
+  id?: number;
+  title: string;
+  content: string;
+}
+
 /**
  * Generates text using the OpenAI Chat Completion API.
  *
@@ -205,6 +211,68 @@ export async function schedulePost(
   } catch (err) {
     if (err instanceof ApiException) throw err;
     throw new ApiException('Network error while scheduling post');
+  }
+}
+
+/**
+ * Retrieves post templates from Supabase.
+ *
+ * @returns Array of template objects.
+ * @throws ApiException When the request fails or a network error occurs.
+ */
+export async function fetchTemplates(): Promise<Template[]> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new ApiException('Supabase not configured');
+  }
+
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/templates?select=*`,
+      {
+        headers: {
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${supabaseAnonKey}`,
+        },
+      },
+    );
+    if (!response.ok) throw new ApiException('Failed to fetch templates', response.status);
+    return response.json();
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while fetching templates');
+  }
+}
+
+/**
+ * Saves a new post template in Supabase.
+ *
+ * @param template - Template data to store.
+ * @throws ApiException When the request fails or a network error occurs.
+ */
+export async function saveTemplate(template: Omit<Template, 'id'>) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new ApiException('Supabase not configured');
+  }
+
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/templates`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify(template),
+    });
+    if (!response.ok) throw new ApiException('Failed to save template', response.status);
+    return response.json();
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while saving template');
   }
 }
 

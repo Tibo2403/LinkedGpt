@@ -8,7 +8,8 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, publishPost, schedulePost, ApiException } from '../../lib/api';
+import TemplateLibrary from '../templates/TemplateLibrary';
+import { generateContent, publishPost, schedulePost, ApiException, Template } from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
 
 
@@ -37,6 +38,7 @@ const PostGenerator: React.FC = () => {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [tone, setTone] = useState('Professional');
   const [hashtags, setHashtags] = useState('');
+  const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
   const { user } = useAuthStore();
 
   const formatHashtags = (tags: string) =>
@@ -107,6 +109,11 @@ const PostGenerator: React.FC = () => {
     });
   };
 
+  const handleTemplateSelect = (template: Template) => {
+    setGeneratedContent(template.content);
+    setShowTemplateLibrary(false);
+  };
+
   const handleGenerate = async () => {
     if (selectedPlatforms.length === 0) {
       alert('Please select at least one platform');
@@ -143,9 +150,9 @@ const PostGenerator: React.FC = () => {
     const platform = selectedPlatforms[0];
     const tags = formatHashtags(hashtags);
     const contentToShare = tags ? `${generatedContent}\n\n${tags}` : generatedContent;
-    const selectedPlatforms = platform ? [platform] : [];
+    const platformsToUse = platform ? [platform] : [];
 
-    if (selectedPlatforms.length === 0) {
+    if (platformsToUse.length === 0) {
       alert('Please select at least one platform to publish.');
       return;
     }
@@ -153,7 +160,7 @@ const PostGenerator: React.FC = () => {
     if (scheduledDate && scheduledTime) {
       try {
         const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString();
-        await schedulePost(user?.id || '', contentToShare, selectedPlatforms, scheduledAt);
+        await schedulePost(user?.id || '', contentToShare, platformsToUse, scheduledAt);
         alert('Post scheduled successfully!');
       } catch (err) {
         console.error(err);
@@ -167,7 +174,7 @@ const PostGenerator: React.FC = () => {
     }
 
     const env = import.meta.env as Record<string, string | undefined>;
-    const tokenMap = selectedPlatforms.reduce<Record<string, string>>((acc, p) => {
+    const tokenMap = platformsToUse.reduce<Record<string, string>>((acc, p) => {
       const token = env[`VITE_${p.toUpperCase()}_API_KEY`];
       if (token) {
         acc[p] = token;
@@ -175,7 +182,7 @@ const PostGenerator: React.FC = () => {
       return acc;
     }, {});
 
-    for (const p of selectedPlatforms) {
+    for (const p of platformsToUse) {
       if (!tokenMap[p]) {
         alert(`${p} API key not configured`);
         return;
@@ -183,7 +190,7 @@ const PostGenerator: React.FC = () => {
     }
 
     try {
-      for (const p of selectedPlatforms) {
+      for (const p of platformsToUse) {
         await publishPost(contentToShare, p, tokenMap[p]);
       }
       alert('Post published successfully!');
@@ -271,6 +278,12 @@ const PostGenerator: React.FC = () => {
               icon={<Target className="h-4 w-4" />}
             >
               {showTargeting ? 'Hide Targeting' : 'Show Targeting'}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowTemplateLibrary(true)}
+            >
+              Choisir un template
             </Button>
           </div>
 
@@ -366,6 +379,13 @@ const PostGenerator: React.FC = () => {
                 Add Media
               </Button>
             </div>
+          )}
+
+          {showTemplateLibrary && (
+            <TemplateLibrary
+              onSelect={handleTemplateSelect}
+              onClose={() => setShowTemplateLibrary(false)}
+            />
           )}
 
           {showImageModal && (
