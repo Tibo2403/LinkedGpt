@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
  * Interface to generate LinkedIn posts with optional images.
@@ -8,7 +8,15 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, publishPost, schedulePost, ApiException } from '../../lib/api';
+import {
+  generateContent,
+  publishPost,
+  schedulePost,
+  ApiException,
+  shortenLink,
+  fetchLinkPreview,
+} from '../../lib/api';
+import LinkPreview from '../common/LinkPreview';
 import { useAuthStore } from '../../stores/authStore';
 
 
@@ -38,6 +46,11 @@ const PostGenerator: React.FC = () => {
   const [tone, setTone] = useState('Professional');
   const [hashtags, setHashtags] = useState('');
   const { user } = useAuthStore();
+  const [linkPreview, setLinkPreview] = useState<{
+    url: string;
+    title: string;
+    description: string;
+  } | null>(null);
 
   const formatHashtags = (tags: string) =>
     tags
@@ -142,7 +155,19 @@ const PostGenerator: React.FC = () => {
 
     const platform = selectedPlatforms[0];
     const tags = formatHashtags(hashtags);
-    const contentToShare = tags ? `${generatedContent}\n\n${tags}` : generatedContent;
+    let contentToShare = tags ? `${generatedContent}\n\n${tags}` : generatedContent;
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const urls = contentToShare.match(urlRegex);
+    if (urls) {
+      for (const url of urls) {
+        try {
+          const shortUrl = await shortenLink(url);
+          contentToShare = contentToShare.replace(url, shortUrl);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    }
     const selectedPlatforms = platform ? [platform] : [];
 
     if (selectedPlatforms.length === 0) {
@@ -196,6 +221,18 @@ const PostGenerator: React.FC = () => {
       }
     }
   };
+
+  useEffect(() => {
+    const urlMatch = generatedContent.match(/https?:\/\/[^\s]+/);
+    if (!urlMatch) {
+      setLinkPreview(null);
+      return;
+    }
+    const url = urlMatch[0];
+    fetchLinkPreview(url)
+      .then((data) => setLinkPreview({ url, ...data }))
+      .catch(() => setLinkPreview(null));
+  }, [generatedContent]);
 
   return (
     <Card title="Create Social Media Post">
@@ -298,6 +335,13 @@ const PostGenerator: React.FC = () => {
                   </Button>
                 </div>
               </div>
+              {linkPreview && (
+                <LinkPreview
+                  url={linkPreview.url}
+                  title={linkPreview.title}
+                  description={linkPreview.description}
+                />
+              )}
             </div>
           )}
 

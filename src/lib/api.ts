@@ -304,3 +304,59 @@ export async function fetchLinkedInEvents(token: string) {
     throw new ApiException('Network error while fetching LinkedIn events');
   }
 }
+
+/**
+ * Shortens a URL using the TinyURL API.
+ *
+ * @param url - The original link to shorten.
+ * @returns The shortened URL string.
+ * @throws ApiException When the API key is missing or the request fails.
+ */
+export async function shortenLink(url: string): Promise<string> {
+  const apiKey = import.meta.env.VITE_TINYURL_API_KEY;
+  if (!apiKey) throw new ApiException('TinyURL API key not configured');
+
+  try {
+    const response = await fetch('https://api.tinyurl.com/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ url }),
+    });
+    if (!response.ok) throw new ApiException('Failed to shorten link', response.status);
+    const data = await response.json();
+    return data.data?.tiny_url || url;
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while shortening link');
+  }
+}
+
+/**
+ * Retrieves basic metadata for a URL by fetching the page and parsing its tags.
+ *
+ * @param url - The link to inspect.
+ * @returns An object containing the page title and description.
+ * @throws ApiException When the request fails or a network error occurs.
+ */
+export async function fetchLinkPreview(url: string): Promise<{
+  title: string;
+  description: string;
+}> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new ApiException('Failed to fetch link preview', res.status);
+    const html = await res.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const title = doc.querySelector('title')?.textContent || url;
+    const description =
+      doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+    return { title, description };
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while fetching link preview');
+  }
+}
