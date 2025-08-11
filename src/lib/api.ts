@@ -304,3 +304,117 @@ export async function fetchLinkedInEvents(token: string) {
     throw new ApiException('Network error while fetching LinkedIn events');
   }
 }
+
+/**
+ * Creates a new draft post and notifies reviewers.
+ *
+ * @param ownerId - ID of the user creating the draft.
+ * @param content - Draft content to be reviewed.
+ * @returns The created draft record.
+ * @throws ApiException When the request fails or Supabase is misconfigured.
+ */
+export async function createDraft(ownerId: string, content: string) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new ApiException('Supabase not configured');
+  }
+
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/post_drafts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${supabaseAnonKey}`,
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify({ owner_id: ownerId, content, status: 'pending', comments: [] }),
+    });
+    if (!response.ok) throw new ApiException('Failed to create draft', response.status);
+    return (await response.json())[0];
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while creating draft');
+  }
+}
+
+/**
+ * Appends a reviewer comment to a draft.
+ *
+ * @param draftId - Identifier of the draft.
+ * @param reviewerId - ID of the reviewer leaving the comment.
+ * @param text - Comment text.
+ * @returns The updated draft record.
+ * @throws ApiException When the request fails or Supabase is misconfigured.
+ */
+export async function addComment(draftId: number, reviewerId: string, text: string) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new ApiException('Supabase not configured');
+  }
+
+  try {
+    const headers = {
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${supabaseAnonKey}`,
+    } as Record<string, string>;
+
+    const draftRes = await fetch(`${supabaseUrl}/rest/v1/post_drafts?id=eq.${draftId}`, {
+      headers,
+    });
+    if (!draftRes.ok) throw new ApiException('Failed to fetch draft', draftRes.status);
+    const draft = (await draftRes.json())[0];
+    const comments = draft?.comments || [];
+    comments.push({ reviewer_id: reviewerId, text, created_at: new Date().toISOString() });
+
+    const updateRes = await fetch(`${supabaseUrl}/rest/v1/post_drafts?id=eq.${draftId}`, {
+      method: 'PATCH',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify({ comments }),
+    });
+    if (!updateRes.ok) throw new ApiException('Failed to add comment', updateRes.status);
+    return (await updateRes.json())[0];
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while adding comment');
+  }
+}
+
+/**
+ * Marks a draft as approved.
+ *
+ * @param draftId - Identifier of the draft to approve.
+ * @returns The updated draft record.
+ * @throws ApiException When the request fails or Supabase is misconfigured.
+ */
+export async function approveDraft(draftId: number) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new ApiException('Supabase not configured');
+  }
+
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/post_drafts?id=eq.${draftId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${supabaseAnonKey}`,
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify({ status: 'approved' }),
+    });
+    if (!response.ok) throw new ApiException('Failed to approve draft', response.status);
+    return (await response.json())[0];
+  } catch (err) {
+    if (err instanceof ApiException) throw err;
+    throw new ApiException('Network error while approving draft');
+  }
+}

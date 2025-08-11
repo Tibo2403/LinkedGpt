@@ -8,7 +8,7 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import TextArea from '../common/TextArea';
 import Input from '../common/Input';
-import { generateContent, publishPost, schedulePost, ApiException } from '../../lib/api';
+import { generateContent, publishPost, schedulePost, ApiException, createDraft } from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
 
 
@@ -38,6 +38,7 @@ const PostGenerator: React.FC = () => {
   const [tone, setTone] = useState('Professional');
   const [hashtags, setHashtags] = useState('');
   const { user } = useAuthStore();
+  const [draftId, setDraftId] = useState<number | null>(null);
 
   const formatHashtags = (tags: string) =>
     tags
@@ -141,11 +142,38 @@ const PostGenerator: React.FC = () => {
     }
 
     const platform = selectedPlatforms[0];
+
+    if (draftId) {
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const res = await fetch(`${supabaseUrl}/rest/v1/post_drafts?id=eq.${draftId}`, {
+          headers: {
+            apikey: supabaseAnonKey,
+            Authorization: `Bearer ${supabaseAnonKey}`,
+          },
+        });
+        if (!res.ok) throw new ApiException('Failed to verify draft', res.status);
+        const data = await res.json();
+        if (!data[0] || data[0].status !== 'approved') {
+          alert('Draft not approved yet');
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+        if (err instanceof ApiException) {
+          alert(err.message);
+        } else {
+          alert('Failed to verify draft approval');
+        }
+        return;
+      }
+    }
     const tags = formatHashtags(hashtags);
     const contentToShare = tags ? `${generatedContent}\n\n${tags}` : generatedContent;
-    const selectedPlatforms = platform ? [platform] : [];
+    const platformsToPublish = platform ? [platform] : [];
 
-    if (selectedPlatforms.length === 0) {
+    if (platformsToPublish.length === 0) {
       alert('Please select at least one platform to publish.');
       return;
     }
@@ -167,7 +195,7 @@ const PostGenerator: React.FC = () => {
     }
 
     const env = import.meta.env as Record<string, string | undefined>;
-    const tokenMap = selectedPlatforms.reduce<Record<string, string>>((acc, p) => {
+    const tokenMap = platformsToPublish.reduce<Record<string, string>>((acc, p) => {
       const token = env[`VITE_${p.toUpperCase()}_API_KEY`];
       if (token) {
         acc[p] = token;
@@ -175,7 +203,7 @@ const PostGenerator: React.FC = () => {
       return acc;
     }, {});
 
-    for (const p of selectedPlatforms) {
+    for (const p of platformsToPublish) {
       if (!tokenMap[p]) {
         alert(`${p} API key not configured`);
         return;
@@ -183,7 +211,7 @@ const PostGenerator: React.FC = () => {
     }
 
     try {
-      for (const p of selectedPlatforms) {
+      for (const p of platformsToPublish) {
         await publishPost(contentToShare, p, tokenMap[p]);
       }
       alert('Post published successfully!');
@@ -193,6 +221,24 @@ const PostGenerator: React.FC = () => {
         alert(err.message);
       } else {
         alert('Failed to publish post');
+      }
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!generatedContent) return;
+    const tags = formatHashtags(hashtags);
+    const contentToSave = tags ? `${generatedContent}\n\n${tags}` : generatedContent;
+    try {
+      const draft = await createDraft(user?.id || '', contentToSave);
+      setDraftId(draft.id);
+      alert('Draft saved and reviewers notified');
+    } catch (err) {
+      console.error(err);
+      if (err instanceof ApiException) {
+        alert(err.message);
+      } else {
+        alert('Failed to save draft');
       }
     }
   };
@@ -364,6 +410,13 @@ const PostGenerator: React.FC = () => {
                 onClick={() => setShowImageModal(true)}
               >
                 Add Media
+              </Button>
+              <Button
+                variant="outline"
+                icon={<Upload className="h-4 w-4" />}
+                onClick={handleSaveDraft}
+              >
+                Save Draft
               </Button>
             </div>
           )}
