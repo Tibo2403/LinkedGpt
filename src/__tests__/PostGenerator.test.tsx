@@ -57,4 +57,27 @@ describe('PostGenerator', () => {
       expect(publishPost).toHaveBeenCalledWith('Generated', 'LinkedIn', 'token'),
     );
   });
+
+  it('limits generateContent calls when quota is exceeded', async () => {
+    const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    render(<PostGenerator />);
+    fireEvent.change(screen.getByLabelText(/Platform/i), {
+      target: { value: 'LinkedIn' },
+    });
+    fireEvent.change(
+      screen.getByPlaceholderText(/Enter a topic or detailed instructions for GPT.../i),
+      { target: { value: 'Topic' } },
+    );
+    const button = screen.getByText(/generate content/i) as HTMLButtonElement;
+    for (let i = 0; i < 5; i++) {
+      fireEvent.click(button);
+      await waitFor(() => expect(generateContent).toHaveBeenCalledTimes(i + 1));
+      await waitFor(() => expect(button.disabled).toBe(false));
+    }
+
+    fireEvent.click(button);
+    expect(alertMock).toHaveBeenCalledWith('Rate limit exceeded. Please wait.');
+    expect(generateContent).toHaveBeenCalledTimes(5);
+    alertMock.mockRestore();
+  });
 });

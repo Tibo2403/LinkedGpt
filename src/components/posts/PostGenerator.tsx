@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 /**
  * Interface to generate LinkedIn posts with optional images.
@@ -49,10 +49,20 @@ const PostGenerator: React.FC = () => {
   const MAX_CALLS_PER_MINUTE = 5;
   const [apiCallCount, setApiCallCount] = useState(0);
   const [apiResetTime, setApiResetTime] = useState(Date.now());
+  const [generateCallCount, setGenerateCallCount] = useState(0);
+  const generateResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showTransformModal, setShowTransformModal] = useState(false);
   const [transformMode, setTransformMode] = useState<'translate' | 'rewrite'>('translate');
   const [transformValue, setTransformValue] = useState('');
   const [isTransforming, setIsTransforming] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (generateResetRef.current) {
+        clearTimeout(generateResetRef.current);
+      }
+    };
+  }, []);
 
   const formatHashtags = (tags: string) =>
     tags
@@ -122,11 +132,27 @@ const PostGenerator: React.FC = () => {
     });
   };
 
+  const incrementGenerateCallCount = () => {
+    setGenerateCallCount(prev => {
+      if (prev === 0) {
+        generateResetRef.current = setTimeout(() => setGenerateCallCount(0), 60000);
+      }
+      return prev + 1;
+    });
+  };
+
   const handleGenerate = async () => {
     if (selectedPlatforms.length === 0) {
       alert('Please select at least one platform');
       return;
     }
+
+    if (generateCallCount >= MAX_CALLS_PER_MINUTE) {
+      alert('Rate limit exceeded. Please wait.');
+      return;
+    }
+
+    incrementGenerateCallCount();
 
     const platform = selectedPlatforms[0];
     setIsGenerating(true);
