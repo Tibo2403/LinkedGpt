@@ -130,6 +130,35 @@ const CVGenerator: React.FC = () => {
     saveAs(blob, 'cv.doc');
   };
 
+  const updateSectionContent = <K extends keyof CVSection['content']>(
+    sectionId: string,
+    field: K,
+    value: CVSection['content'][K]
+  ) => {
+    setSections(currentSections =>
+      currentSections.map(section =>
+        section.id === sectionId
+          ? {
+              ...section,
+              content: {
+                ...section.content,
+                [field]: value,
+              },
+            }
+          : section
+      )
+    );
+  };
+
+  const updateSectionSkills = (sectionId: string, value: string) => {
+    const skills = value
+      .split(',')
+      .map(skill => skill.trim())
+      .filter(Boolean);
+
+    updateSectionContent(sectionId, 'skills', skills);
+  };
+
   const generatePDF = async (sections: CVSection[]) => {
     const { jsPDF } = await import('jspdf');
     const pdf = new jsPDF({
@@ -252,53 +281,60 @@ const CVGenerator: React.FC = () => {
                     </h3>
                     
                     {section.type === 'skills' ? (
-                      <div className="flex flex-wrap gap-2">
-                        {section.content.skills?.map((skill, index) => (
-                          <span
-                            key={index}
-                            className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded"
-                          >
-                            {skill}
-                          </span>
-                        ))}
+                      <div className="space-y-3">
+                        <Input
+                          label="Skills"
+                          value={section.content.skills?.join(', ') || ''}
+                          onChange={(e) => updateSectionSkills(section.id, e.target.value)}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          {section.content.skills?.map((skill, index) => (
+                            <span
+                              key={index}
+                              className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     ) : (
                       <div className="space-y-4">
                         <Input
                           label="Title"
-                          value={section.content.title}
-                          onChange={() => {}}
+                          value={section.content.title || ''}
+                          onChange={(e) => updateSectionContent(section.id, 'title', e.target.value)}
                         />
                         <div className="grid grid-cols-2 gap-4">
                           <Input
                             label="Company/Institution"
-                            value={section.content.company}
-                            onChange={() => {}}
+                            value={section.content.company || ''}
+                            onChange={(e) => updateSectionContent(section.id, 'company', e.target.value)}
                           />
                           <Input
                             label="Location"
-                            value={section.content.location}
-                            onChange={() => {}}
+                            value={section.content.location || ''}
+                            onChange={(e) => updateSectionContent(section.id, 'location', e.target.value)}
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <Input
                             type="month"
                             label="Start Date"
-                            value={section.content.startDate}
-                            onChange={() => {}}
+                            value={section.content.startDate || ''}
+                            onChange={(e) => updateSectionContent(section.id, 'startDate', e.target.value)}
                           />
                           <Input
                             type="month"
                             label="End Date"
-                            value={section.content.endDate}
-                            onChange={() => {}}
+                            value={section.content.endDate || ''}
+                            onChange={(e) => updateSectionContent(section.id, 'endDate', e.target.value)}
                           />
                         </div>
                         <TextArea
                           label="Description"
-                          value={section.content.description}
-                          onChange={() => {}}
+                          value={section.content.description || ''}
+                          onChange={(e) => updateSectionContent(section.id, 'description', e.target.value)}
                           rows={4}
                         />
                       </div>
@@ -362,12 +398,12 @@ const CVGenerator: React.FC = () => {
                   <h4 className="text-sm font-medium text-gray-700 mb-2">
                     ATS Tips
                   </h4>
-                  <ul className="text-sm text-gray-600 space-y-2">
-                    <li>• Use standard section headings</li>
-                    <li>• Include relevant keywords naturally</li>
-                    <li>• Avoid complex formatting</li>
-                    <li>• Use common file formats (PDF, DOCX)</li>
-                    <li>• Keep layout simple and clean</li>
+                  <ul className="text-sm text-gray-600 space-y-2 list-disc pl-5">
+                    <li>Use standard section headings</li>
+                    <li>Include relevant keywords naturally</li>
+                    <li>Avoid complex formatting</li>
+                    <li>Use common file formats (PDF, DOCX)</li>
+                    <li>Keep layout simple and clean</li>
                   </ul>
                 </div>
               </div>
