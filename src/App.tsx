@@ -2,14 +2,15 @@ import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import Dashboard from './pages/Dashboard';
-import Posts from './pages/Posts';
-import Messages from './pages/Messages';
-import ReceivedMessages from './pages/ReceivedMessages';
-import History from './pages/History';
-import CVGenerator from './pages/CVGenerator';
+
+const Posts = React.lazy(() => import('./pages/Posts'));
+const Messages = React.lazy(() => import('./pages/Messages'));
+const ReceivedMessages = React.lazy(() => import('./pages/ReceivedMessages'));
+const History = React.lazy(() => import('./pages/History'));
+const CVGenerator = React.lazy(() => import('./pages/CVGenerator'));
 const Calendar = React.lazy(() => import('./pages/Calendar'));
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
+const Profile = React.lazy(() => import('./pages/Profile'));
+const Settings = React.lazy(() => import('./pages/Settings'));
 
 function App() {
   return (
