@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { FileText, Sparkles, FileDown, FileText as FileTextIcon, Settings, X } from 'lucide-react';
 import { saveAs } from 'file-saver';
-import { jsPDF } from 'jspdf';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -131,7 +130,8 @@ const CVGenerator: React.FC = () => {
     saveAs(blob, 'cv.doc');
   };
 
-  const generatePDF = (sections: CVSection[]) => {
+  const generatePDF = async (sections: CVSection[]) => {
+    const { jsPDF } = await import('jspdf');
     const pdf = new jsPDF({
       unit: 'mm',
       format: exportSettings.paperSize
@@ -157,7 +157,7 @@ const CVGenerator: React.FC = () => {
       if (section.type === 'skills') {
         const skills = section.content.skills?.join(', ') || '';
         const lines = pdf.splitTextToSize(skills, pdf.internal.pageSize.width - 40);
-        lines.forEach(line => {
+        lines.forEach((line: string) => {
           pdf.text(line, 20, yPos);
           yPos += 7;
         });
@@ -175,7 +175,7 @@ const CVGenerator: React.FC = () => {
         
         const description = section.content.description || '';
         const lines = pdf.splitTextToSize(description, pdf.internal.pageSize.width - 40);
-        lines.forEach(line => {
+        lines.forEach((line: string) => {
           pdf.text(line, 20, yPos);
           yPos += 7;
         });
@@ -195,7 +195,7 @@ const CVGenerator: React.FC = () => {
       if (format === 'word') {
         generateWordDocument(sections);
       } else {
-        generatePDF(sections);
+        await generatePDF(sections);
       }
     } catch (error) {
       console.error('Export error:', error);
