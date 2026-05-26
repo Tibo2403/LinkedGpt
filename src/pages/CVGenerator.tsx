@@ -95,39 +95,52 @@ const CVGenerator: React.FC = () => {
     }, 2000);
   };
 
-  const generateWordDocument = (sections: CVSection[]) => {
-    // Create a simple HTML representation of the CV
-    const content = sections.map(section => {
-      const sectionContent = section.content;
-      return `
-        <h2>${section.type.toUpperCase()}</h2>
-        ${section.type === 'skills' ? 
-          `<p>${sectionContent.skills?.join(', ')}</p>` :
-          `<h3>${sectionContent.title}</h3>
-           <p>${sectionContent.company} - ${sectionContent.location}</p>
-           <p>${sectionContent.startDate} - ${sectionContent.endDate}</p>
-           <p>${sectionContent.description}</p>`
-        }
-      `;
-    }).join('\n');
+  const generateWordDocument = async (sections: CVSection[]) => {
+    const { Document, HeadingLevel, Packer, Paragraph, TextRun } = await import('docx');
 
-    // Create a Blob with the content
-    const blob = new Blob([`
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; }
-            h2 { color: ${exportSettings.accentColor}; }
-          </style>
-        </head>
-        <body>
-          ${content}
-        </body>
-      </html>
-    `], { type: 'application/msword' });
+    const children = sections.flatMap(section => {
+      const heading = new Paragraph({
+        heading: HeadingLevel.HEADING_2,
+        children: [
+          new TextRun({
+            text: section.type.toUpperCase(),
+            bold: true,
+            color: exportSettings.accentColor.replace('#', ''),
+          }),
+        ],
+      });
 
-    // Save the file
-    saveAs(blob, 'cv.doc');
+      if (section.type === 'skills') {
+        return [
+          heading,
+          new Paragraph({
+            children: [new TextRun(section.content.skills?.join(', ') || '')],
+          }),
+        ];
+      }
+
+      return [
+        heading,
+        new Paragraph({
+          children: [new TextRun({ text: section.content.title || '', bold: true })],
+        }),
+        new Paragraph(`${section.content.company || ''} - ${section.content.location || ''}`),
+        new Paragraph(`${section.content.startDate || ''} - ${section.content.endDate || ''}`),
+        new Paragraph(section.content.description || ''),
+      ];
+    });
+
+    const document = new Document({
+      sections: [
+        {
+          properties: {},
+          children,
+        },
+      ],
+    });
+
+    const blob = await Packer.toBlob(document);
+    saveAs(blob, 'cv.docx');
   };
 
   const updateSectionContent = <K extends keyof CVSection['content']>(
@@ -222,7 +235,7 @@ const CVGenerator: React.FC = () => {
     
     try {
       if (format === 'word') {
-        generateWordDocument(sections);
+        await generateWordDocument(sections);
       } else {
         await generatePDF(sections);
       }
