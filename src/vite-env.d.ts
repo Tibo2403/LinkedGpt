@@ -9,6 +9,7 @@ interface ImportMetaEnv {
   readonly VITE_GOOGLE_CLIENT_SECRET: string
   readonly VITE_OUTLOOK_CLIENT_ID: string
   readonly VITE_OUTLOOK_CLIENT_SECRET: string
+  readonly VITE_DEMO_MODE: string
 }
 
 interface ImportMeta {

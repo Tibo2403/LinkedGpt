@@ -36,9 +36,14 @@ Required environment variables:
 ```env
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_DEMO_MODE=false
 ```
 
 Optional integrations can be configured for OpenAI, LinkedIn, Google Calendar, and Outlook. See `.env.example` for the full list.
+
+## Demo Mode
+
+Set `VITE_DEMO_MODE=true` to use built-in demo responses for content generation, publishing, scheduling, metrics, and calendar sync. This lets the app run as a portfolio demo without Supabase, OpenAI, or LinkedIn credentials.
 
 ## Quality Checks
 

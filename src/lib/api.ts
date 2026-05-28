@@ -12,6 +12,24 @@ export class ApiException extends Error {
   }
 }
 
+const isDemoMode = () => import.meta.env.VITE_DEMO_MODE === 'true';
+
+const demoContent = (prompt: string, platform: string) => {
+  const topic = prompt.split('\n')[0]?.replace(/^Topic:\s*/i, '').trim() || 'AI-powered professional growth';
+  return [
+    `Demo ${platform} draft: ${topic}`,
+    '',
+    'Professionals are moving faster when they combine clear positioning, thoughtful outreach, and AI-assisted content workflows.',
+    '',
+    'Key takeaways:',
+    '- Start with a specific audience and outcome.',
+    '- Turn one idea into a post, a follow-up message, and a meeting agenda.',
+    '- Track engagement so each iteration gets sharper.',
+    '',
+    '#LinkedIn #AI #ProfessionalGrowth',
+  ].join('\n');
+};
+
 /**
  * Generates text using the OpenAI Chat Completion API.
  *
@@ -21,6 +39,8 @@ export class ApiException extends Error {
  * @throws ApiException When the API key is missing or the request fails.
  */
 export async function generateContent(prompt: string, platform: string): Promise<string> {
+  if (isDemoMode()) return demoContent(prompt, platform);
+
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   if (!apiKey) throw new ApiException('OpenAI API key not configured');
 
@@ -65,6 +85,8 @@ export async function generateContent(prompt: string, platform: string): Promise
  * @throws ApiException When the API key is missing or the request fails.
  */
 export async function translateContent(text: string, targetLang: string): Promise<string> {
+  if (isDemoMode()) return `[Demo ${targetLang} translation]\n${text}`;
+
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   if (!apiKey) throw new ApiException('OpenAI API key not configured');
 
@@ -101,6 +123,8 @@ export async function translateContent(text: string, targetLang: string): Promis
  * @throws ApiException When the API key is missing or the request fails.
  */
 export async function rewriteContent(text: string, tone: string): Promise<string> {
+  if (isDemoMode()) return `[Demo ${tone} rewrite]\n${text}`;
+
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   if (!apiKey) throw new ApiException('OpenAI API key not configured');
 
@@ -136,6 +160,8 @@ export async function rewriteContent(text: string, tone: string): Promise<string
  * @throws ApiException When the request fails or a network error occurs.
  */
 export async function sendLinkedInPost(text: string, accessToken: string): Promise<string> {
+  if (isDemoMode()) return `demo-linkedin-${Date.now()}`;
+
   try {
     const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
       method: 'POST',
@@ -173,6 +199,8 @@ export async function sendLinkedInPost(text: string, accessToken: string): Promi
  * @throws ApiException When the request fails or a network error occurs.
  */
 export async function sendTwitterPost(text: string, accessToken: string): Promise<string> {
+  if (isDemoMode()) return `demo-twitter-${Date.now()}`;
+
   try {
     const response = await fetch('https://api.twitter.com/2/tweets', {
       method: 'POST',
@@ -199,6 +227,8 @@ export async function sendTwitterPost(text: string, accessToken: string): Promis
  * @throws ApiException When the request fails or a network error occurs.
  */
 export async function sendFacebookPost(text: string, accessToken: string): Promise<string> {
+  if (isDemoMode()) return `demo-facebook-${Date.now()}`;
+
   try {
     const response = await fetch(
       `https://graph.facebook.com/v18.0/me/feed?access_token=${accessToken}`,
@@ -250,6 +280,8 @@ export async function publishPost(
 }
 
 async function savePostReference(postId: string, platform: string) {
+  if (isDemoMode()) return;
+
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseAnonKey) return;
@@ -290,6 +322,17 @@ export async function schedulePost(
   platforms: string[],
   scheduledAt: string,
 ) {
+  if (isDemoMode()) {
+    return {
+      id: `demo-scheduled-${Date.now()}`,
+      user_id: userId,
+      content,
+      platforms,
+      scheduled_at: scheduledAt,
+      status: 'pending',
+    };
+  }
+
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -325,6 +368,17 @@ export async function schedulePost(
 }
 
 export async function fetchPostMetrics(postIds: string[]): Promise<PostMetrics[]> {
+  if (isDemoMode()) {
+    return postIds.map((postId, index) => ({
+      postId,
+      platform: index % 2 === 0 ? 'LinkedIn' : 'Twitter',
+      views: 1200 + index * 250,
+      likes: 80 + index * 12,
+      comments: 14 + index * 3,
+      shares: 9 + index,
+    }));
+  }
+
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -365,6 +419,8 @@ export async function sendLinkedInMessage(
   recipientUrn: string,
   accessToken: string,
 ) {
+  if (isDemoMode()) return;
+
   try {
     const response = await fetch('https://api.linkedin.com/v2/messages', {
       method: 'POST',
@@ -394,6 +450,17 @@ export async function sendLinkedInMessage(
  * @throws ApiException When the request fails or a network error occurs.
  */
 export async function fetchGoogleCalendarEvents(token: string) {
+  if (isDemoMode()) {
+    return [
+      {
+        id: 'demo-google-1',
+        summary: 'Demo strategy sync',
+        start: { dateTime: new Date().toISOString() },
+        end: { dateTime: new Date(Date.now() + 30 * 60 * 1000).toISOString() },
+      },
+    ];
+  }
+
   try {
     const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
       headers: { Authorization: `Bearer ${token}` },
@@ -414,6 +481,17 @@ export async function fetchGoogleCalendarEvents(token: string) {
  * @throws ApiException When the request fails or a network error occurs.
  */
 export async function fetchOutlookEvents(token: string) {
+  if (isDemoMode()) {
+    return [
+      {
+        id: 'demo-outlook-1',
+        subject: 'Demo prospect follow-up',
+        start: { dateTime: new Date(Date.now() + 86400000).toISOString() },
+        end: { dateTime: new Date(Date.now() + 90000000).toISOString() },
+      },
+    ];
+  }
+
   try {
     const res = await fetch('https://graph.microsoft.com/v1.0/me/events', {
       headers: { Authorization: `Bearer ${token}` },
@@ -434,6 +512,16 @@ export async function fetchOutlookEvents(token: string) {
  * @throws ApiException When the request fails or a network error occurs.
  */
 export async function fetchLinkedInEvents(token: string) {
+  if (isDemoMode()) {
+    return [
+      {
+        id: 'demo-linkedin-event-1',
+        name: 'Demo LinkedIn networking coffee',
+        startAt: new Date(Date.now() + 2 * 86400000).toISOString(),
+      },
+    ];
+  }
+
   try {
     const res = await fetch('https://api.linkedin.com/v2/events', {
       headers: {
