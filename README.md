@@ -45,6 +45,16 @@ Optional integrations can be configured for OpenAI, LinkedIn, Google Calendar, a
 
 Set `VITE_DEMO_MODE=true` to use built-in demo responses for content generation, publishing, scheduling, metrics, and calendar sync. This lets the app run as a portfolio demo without Supabase, OpenAI, or LinkedIn credentials.
 
+```bash
+VITE_DEMO_MODE=true npm run demo
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:VITE_DEMO_MODE="true"; npm run demo
+```
+
 ## Quality Checks
 
 ```bash
