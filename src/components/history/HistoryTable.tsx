@@ -156,10 +156,13 @@ const HistoryTable: React.FC = () => {
   const filteredData = applyFilters(historyData);
 
   const sortedData = [...filteredData].sort((a, b) => {
-    if (a[sortField] < b[sortField]) {
+    const aValue = a[sortField] ?? '';
+    const bValue = b[sortField] ?? '';
+
+    if (aValue < bValue) {
       return sortDirection === 'asc' ? -1 : 1;
     }
-    if (a[sortField] > b[sortField]) {
+    if (aValue > bValue) {
       return sortDirection === 'asc' ? 1 : -1;
     }
     return 0;

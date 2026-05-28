@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import MessageGenerator from '../components/messages/MessageGenerator';
 import { generateContent, sendLinkedInMessage } from '../lib/api';
 
@@ -16,7 +16,7 @@ vi.mock('../lib/api', async () => {
 describe('MessageGenerator', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (generateContent as unknown as vi.Mock).mockResolvedValue('Generated');
+    (generateContent as Mock).mockResolvedValue('Generated');
     const env = import.meta.env as Record<string, string>;
     env.VITE_LINKEDIN_API_KEY = 'token';
   });

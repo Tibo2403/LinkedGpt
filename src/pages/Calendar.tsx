@@ -45,6 +45,34 @@ interface CalendarCredentials {
   };
 }
 
+type MeetingLocation = NonNullable<Meeting['location']>;
+type CalendarProvider = keyof CalendarCredentials;
+
+const defaultVirtualLocation = (): MeetingLocation => ({ type: 'virtual' });
+
+const updateLocation = (
+  current: Partial<Meeting>,
+  patch: Partial<MeetingLocation>,
+): MeetingLocation => ({
+  type: current.location?.type ?? 'virtual',
+  ...current.location,
+  ...patch,
+});
+
+const updateProviderCredentials = (
+  current: CalendarCredentials,
+  provider: CalendarProvider,
+  patch: Partial<NonNullable<CalendarCredentials[CalendarProvider]>>,
+): CalendarCredentials => ({
+  ...current,
+  [provider]: {
+    clientId: current[provider]?.clientId ?? '',
+    clientSecret: current[provider]?.clientSecret ?? '',
+    token: current[provider]?.token,
+    ...patch,
+  },
+});
+
 const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -54,9 +82,7 @@ const Calendar: React.FC = () => {
   const [newMeeting, setNewMeeting] = useState<Partial<Meeting>>({
     type: 'video',
     duration: 30,
-    location: {
-      type: 'virtual'
-    }
+    location: defaultVirtualLocation()
   });
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
@@ -249,9 +275,7 @@ const Calendar: React.FC = () => {
       setNewMeeting({
         type: 'video',
         duration: 30,
-        location: {
-          type: 'virtual'
-        },
+        location: defaultVirtualLocation(),
         date: format(date, 'yyyy-MM-dd'),
         time: '09:00'
       });
@@ -305,9 +329,7 @@ const Calendar: React.FC = () => {
       setNewMeeting({ 
         type: 'video', 
         duration: 30,
-        location: {
-          type: 'virtual'
-        }
+        location: defaultVirtualLocation()
       });
     }
   };
@@ -668,11 +690,10 @@ const Calendar: React.FC = () => {
                         value={newMeeting.location?.meetingLink || ''}
                         onChange={(e) => setNewMeeting({
                           ...newMeeting,
-                          location: {
-                            ...newMeeting.location,
+                          location: updateLocation(newMeeting, {
                             type: 'virtual',
-                            meetingLink: e.target.value
-                          }
+                            meetingLink: e.target.value,
+                          })
                         })}
                       />
                       <div className="grid grid-cols-2 gap-4">
@@ -682,10 +703,10 @@ const Calendar: React.FC = () => {
                           value={newMeeting.location?.meetingId || ''}
                           onChange={(e) => setNewMeeting({
                             ...newMeeting,
-                            location: {
-                              ...newMeeting.location,
-                              meetingId: e.target.value
-                            }
+                            location: updateLocation(newMeeting, {
+                              type: 'virtual',
+                              meetingId: e.target.value,
+                            })
                           })}
                         />
                         <Input
@@ -695,10 +716,10 @@ const Calendar: React.FC = () => {
                           value={newMeeting.location?.password || ''}
                           onChange={(e) => setNewMeeting({
                             ...newMeeting,
-                            location: {
-                              ...newMeeting.location,
-                              password: e.target.value
-                            }
+                            location: updateLocation(newMeeting, {
+                              type: 'virtual',
+                              password: e.target.value,
+                            })
                           })}
                         />
                       </div>
@@ -774,8 +795,7 @@ const Calendar: React.FC = () => {
                       label="Client ID"
                       value={credentials.google?.clientId || ''}
                       onChange={(e) => setCredentials({
-                        ...credentials,
-                        google: { ...credentials.google, clientId: e.target.value }
+                        ...updateProviderCredentials(credentials, 'google', { clientId: e.target.value })
                       })}
                     />
                     <Input
@@ -783,8 +803,7 @@ const Calendar: React.FC = () => {
                       type="password"
                       value={credentials.google?.clientSecret || ''}
                       onChange={(e) => setCredentials({
-                        ...credentials,
-                        google: { ...credentials.google, clientSecret: e.target.value }
+                        ...updateProviderCredentials(credentials, 'google', { clientSecret: e.target.value })
                       })}
                     />
                   </div>
@@ -795,8 +814,7 @@ const Calendar: React.FC = () => {
                       label="Client ID"
                       value={credentials.outlook?.clientId || ''}
                       onChange={(e) => setCredentials({
-                        ...credentials,
-                        outlook: { ...credentials.outlook, clientId: e.target.value }
+                        ...updateProviderCredentials(credentials, 'outlook', { clientId: e.target.value })
                       })}
                     />
                     <Input
@@ -804,8 +822,7 @@ const Calendar: React.FC = () => {
                       type="password"
                       value={credentials.outlook?.clientSecret || ''}
                       onChange={(e) => setCredentials({
-                        ...credentials,
-                        outlook: { ...credentials.outlook, clientSecret: e.target.value }
+                        ...updateProviderCredentials(credentials, 'outlook', { clientSecret: e.target.value })
                       })}
                     />
                   </div>
@@ -816,8 +833,7 @@ const Calendar: React.FC = () => {
                       label="Client ID"
                       value={credentials.linkedin?.clientId || ''}
                       onChange={(e) => setCredentials({
-                        ...credentials,
-                        linkedin: { ...credentials.linkedin, clientId: e.target.value }
+                        ...updateProviderCredentials(credentials, 'linkedin', { clientId: e.target.value })
                       })}
                     />
                     
@@ -826,8 +842,7 @@ const Calendar: React.FC = () => {
                       type="password"
                       value={credentials.linkedin?.clientSecret || ''}
                       onChange={(e) => setCredentials({
-                        ...credentials,
-                        linkedin: { ...credentials.linkedin, clientSecret: e.target.value }
+                        ...updateProviderCredentials(credentials, 'linkedin', { clientSecret: e.target.value })
                       })}
                     />
                   </div>

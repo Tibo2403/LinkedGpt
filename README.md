@@ -44,6 +44,7 @@ Optional integrations can be configured for OpenAI, LinkedIn, Google Calendar, a
 
 ```bash
 npm run lint
+npm run typecheck
 npm test
 npm run build
 ```
@@ -69,6 +70,5 @@ supabase/         Database migrations and Supabase assets
 
 - Add screenshots and a short demo flow to the README.
 - Add more tests around message generation and scheduling flows.
-- Resolve the remaining strict TypeScript issues and add `tsc -b` to CI.
 - Document Supabase schema setup in a dedicated deployment guide.
 - Add safer rate-limit handling for external APIs.
