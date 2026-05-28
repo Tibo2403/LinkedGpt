@@ -55,6 +55,13 @@ On Windows PowerShell:
 $env:VITE_DEMO_MODE="true"; npm run demo
 ```
 
+## Portfolio Assets
+
+- `docs/portfolio.md` explains the project in recruiter/client terms.
+- `docs/demo-media.md` lists the screenshots and GIFs to capture in demo mode.
+- `docs/issue-backlog.md` contains ready-to-create GitHub issues.
+- `CHANGELOG.md` tracks release notes.
+
 ## Quality Checks
 
 ```bash
@@ -83,7 +90,7 @@ supabase/         Database migrations and Supabase assets
 
 ## Roadmap
 
-- Add screenshots and a short demo flow to the README.
+- Add the screenshots and short demo flow listed in `docs/demo-media.md`.
 - Add more tests around message generation and scheduling flows.
 - Document Supabase schema setup in a dedicated deployment guide.
 - Add safer rate-limit handling for external APIs.
