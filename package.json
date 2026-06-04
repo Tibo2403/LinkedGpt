@@ -17,7 +17,7 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@supabase/auth-ui-react": "^0.4.7",
     "@supabase/auth-ui-shared": "^0.1.8",
-    "@supabase/supabase-js": "^2.39.3",
+    "@supabase/supabase-js": "^2.107.0",
     "date-fns": "^3.3.1",
     "docx": "^9.7.0",
     "file-saver": "^2.0.5",
