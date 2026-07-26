@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Button from '../common/Button';
-import { Link } from 'react-router-dom';
+import { Link } from '../../router';
 import { useAuthStore } from '../../stores/authStore';
 import LanguageSwitcher from './LanguageSwitcher';
 
